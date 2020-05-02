@@ -1,0 +1,15 @@
+module github.com/DarthRamone/fireflycrm-bot
+
+go 1.13
+
+require (
+	github.com/DarthRamone/modulbank-go v0.0.0-20200502112143-efe8ff56504a
+	github.com/go-telegram-bot-api/telegram-bot-api v4.6.4+incompatible
+	github.com/gojuno/goose v1.0.0
+	github.com/gojuno/minimock/v3 v3.0.6
+	github.com/golangci/golangci-lint v1.26.0
+	github.com/hexdigest/gowrap v1.1.7
+	github.com/jmoiron/sqlx v1.2.1-0.20190826204134-d7d95172beb5
+	github.com/lib/pq v1.2.0
+	github.com/technoweenie/multipartstreamer v1.0.1 // indirect
+)
