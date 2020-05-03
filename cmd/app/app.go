@@ -3,13 +3,12 @@ package main
 import (
 	"context"
 	"flag"
-	"fmt"
+	"github.com/DarthRamone/fireflycrm-bot/billmaker"
 	"github.com/DarthRamone/fireflycrm-bot/orderbook"
 	"github.com/DarthRamone/fireflycrm-bot/service"
 	"github.com/DarthRamone/fireflycrm-bot/storage"
-	"github.com/DarthRamone/fireflycrm-bot/types"
+	"github.com/DarthRamone/fireflycrm-bot/users"
 	"github.com/DarthRamone/modulbank-go"
-	"github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"log"
@@ -31,53 +30,16 @@ func main() {
 	var mb modulbank.API
 
 	ob := orderbook.MustNewOrderBook(stor, mb)
+	bm := billmaker.NewBillMaker()
+	u := users.NewUsers(stor)
 
 	serv := service.Service{
 		OrderBook: ob,
+		BillMaker: bm,
+		Users:     u,
 	}
 
-	bot, err := tgbotapi.NewBotAPI(*token)
-	if err != nil {
-		log.Fatalf("failed to initialize bot: %w", err)
-	}
-	log.Printf("authorized on account %s", bot.Self.UserName)
+	ctx := context.Background()
 
-	//bot.Debug = true
-	updateConf := tgbotapi.NewUpdate(0)
-	updateConf.Timeout = 60
-
-	updates, err := bot.GetUpdatesChan(updateConf)
-	if err != nil {
-		log.Fatalf("failed to get updates channel: %w", err)
-	}
-
-	for update := range updates {
-		if update.Message == nil {
-			continue
-		}
-
-		log.Printf("[%s] %s (chat_id: %d)", update.Message.From.UserName, update.Message.Text, update.Message.Chat.ID)
-
-		id, err := serv.OrderBook.CreateOrder(context.Background(), types.OrderOptions{
-			Description:    "test",
-			CustomerName:   "test name",
-			CustomerEmail:  "test email",
-			CustomerPhone:  "test phone",
-			CustomerSocial: "http://insta.com",
-		})
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		msg := tgbotapi.NewMessage(update.Message.Chat.ID, fmt.Sprintf("%d", id))
-		msg.ReplyToMessageID = update.Message.MessageID
-		button := tgbotapi.NewKeyboardButton("test")
-		markup := tgbotapi.NewReplyKeyboard([]tgbotapi.KeyboardButton{button})
-		msg.ReplyMarkup = markup
-
-		_, err = bot.Send(msg)
-		if err != nil {
-			log.Printf("failed to send message: %w", err)
-		}
-	}
+	serv.Serve(ctx, service.ServiceOptions{TelegramToken: *token})
 }

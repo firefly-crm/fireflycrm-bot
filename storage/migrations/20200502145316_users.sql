@@ -2,8 +2,12 @@
 -- +goose StatementBegin
 CREATE TABLE users
 (
-    id      BIGINT NOT NULL PRIMARY KEY,
-    chat_id BIGINT NOT NULL
+    id              BIGINT  NOT NULL PRIMARY KEY,
+    chat_id         BIGINT  NOT NULL,
+    is_merchant     BOOLEAN NOT NULL DEFAULT FALSE,
+    active_order_id BIGINT REFERENCES orders,
+    merchant_id     TEXT,
+    secret_key      TEXT
 );
 CREATE INDEX users_chat_id_idx ON users (chat_id);
 

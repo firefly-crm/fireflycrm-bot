@@ -2,7 +2,7 @@ package orderbook
 
 import "context"
 
-//Removes item from created bill
-func (b orderBook) RemoveItem(context context.Context, itemId uint64) error {
-	panic("implement me")
+//Removes item from created order
+func (b orderBook) RemoveItem(ctx context.Context, itemId uint64) error {
+	return b.storage.RemoveReceiptItem(ctx, itemId)
 }
