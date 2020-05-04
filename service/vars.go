@@ -5,6 +5,10 @@ var (
 	kbItems         = "Позиции"
 	kbAddItem       = "Добавить"
 	kbRemoveItem    = "Удалить"
+	kbEditItem      = "Редактировать"
+	kbQty           = "Кол-во"
+	kbPrice         = "Цена"
+	kbName          = "Имя"
 	kbCustomer      = "Данные клиента"
 	kbCustomerEmail = "Эл. почта"
 	kbCustomerPhone = "Телефон"
@@ -17,6 +21,7 @@ var (
 	kbDataCustomer   = "customer"
 	kbDataAddItem    = "order_add_item"
 	kbDataRemoveItem = "order_remove_item"
+	kbDataEditItem   = "order_edit_item"
 	kbDataBack       = "back"
 	kbDataCancel     = "cancel"
 )
@@ -26,4 +31,5 @@ var (
 	replyWelcome                      = "Добро пожаловать!"
 	replyEnterItemName                = "Введите наименование"
 	replyEnterItemPrice               = "Введите стоимость"
+	replyEnterItemQty                 = "Введите количество"
 )

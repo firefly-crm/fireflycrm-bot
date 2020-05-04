@@ -137,6 +137,26 @@ func (s Service) processPrompt(ctx context.Context, bot *tg.BotAPI, update tg.Up
 
 		break
 	case types.WaitingItemQuantity:
+		if !activeOrder.ActiveItemId.Valid {
+			return fmt.Errorf("active order item id doesnt exists")
+		}
+
+		qty, err := strconv.Atoi(text)
+		if err != nil {
+			return fmt.Errorf("failed to parse int: %w", err)
+		}
+
+		receiptItemId := uint64(activeOrder.ActiveItemId.Int64)
+		err = s.OrderBook.UpdateReceiptItemQty(ctx, qty, receiptItemId)
+		if err != nil {
+			return fmt.Errorf("failed to change item quantity: %w", err)
+		}
+
+		err = s.deleteHint(ctx, bot, activeOrder)
+		if err != nil {
+			return fmt.Errorf("failed to remove hint: %w", err)
+		}
+
 		break
 	}
 

@@ -25,8 +25,10 @@ type (
 		RemoveReceiptItem(ctx context.Context, receiptItemId uint64) error
 		UpdateReceiptItemName(ctx context.Context, name string, userId, receiptItemId uint64) (err error)
 		UpdateReceiptItemPrice(ctx context.Context, price uint32, receiptItemId uint64) (err error)
+		UpdateReceiptItemQty(ctx context.Context, qty int, receiptItemId uint64) (err error)
 		GetReceiptItem(ctx context.Context, id uint64) (types.ReceiptItem, error)
 		GetReceiptItems(ctx context.Context, id uint64) ([]types.ReceiptItem, error)
+		SetActiveItemId(ctx context.Context, orderId uint64, receiptItemId uint64) error
 	}
 
 	storage struct {
@@ -143,6 +145,15 @@ func (s storage) UpdateReceiptItemPrice(ctx context.Context, price uint32, recei
 	return nil
 }
 
+func (s storage) UpdateReceiptItemQty(ctx context.Context, qty int, receiptItemId uint64) (err error) {
+	const updateQuery = `UPDATE receipt_items SET quantity=$2 WHERE id=$1`
+	_, err = s.db.Exec(updateQuery, receiptItemId, qty)
+	if err != nil {
+		return fmt.Errorf("failed to update item quantity: %w", err)
+	}
+	return nil
+}
+
 func (s storage) UpdateReceiptItemName(ctx context.Context, name string, userId, receiptItemId uint64) (err error) {
 	const getItemQuery = `
 INSERT INTO items(user_id,name)
@@ -181,6 +192,15 @@ WHERE
 		return fmt.Errorf("failed to update receipt item: %w", err)
 	}
 
+	return nil
+}
+
+func (s storage) SetActiveItemId(ctx context.Context, orderId uint64, receiptItemId uint64) error {
+	const setActiveItemIdQuery = `UPDATE orders SET active_item_id=$1 WHERE id=$2`
+	_, err := s.db.Exec(setActiveItemIdQuery, receiptItemId, orderId)
+	if err != nil {
+		return fmt.Errorf("failed to set active item id: %w", err)
+	}
 	return nil
 }
 
@@ -276,10 +296,54 @@ func (s storage) SetActiveOrderForUser(ctx context.Context, userId, orderId uint
 }
 
 func (s storage) GetOrderByMessageId(ctx context.Context, messageId uint64) (order types.Order, err error) {
-	const getOrderQuery = `SELECT id,message_id,user_id,description,state,active_item_id,hint_message_id FROM orders WHERE message_id=$1`
+	const getOrderQuery = `
+SELECT 
+       id,
+       message_id,
+       user_id,
+       description,
+       state,
+       active_item_id,
+       hint_message_id 
+FROM 
+     orders 
+WHERE 
+      message_id=$1`
+	const getReceiptItemsQuery = `
+SELECT
+	id,
+    name,
+    item_id,
+    order_id,
+    quantity,
+    price,
+    initialised
+FROM
+	receipt_items
+WHERE
+	order_id=$1
+`
+
+	tx, err := s.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return order, fmt.Errorf("failed to start transaction: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		} else {
+			_ = tx.Commit()
+		}
+	}()
+
 	err = s.db.Get(&order, getOrderQuery, messageId)
 	if err != nil {
-		return order, fmt.Errorf("failed to get order by message id: %w", err)
+		return order, fmt.Errorf("failed to get order: %w", err)
+	}
+
+	err = s.db.Select(&order.ReceiptItems, getReceiptItemsQuery, order.Id)
+	if err != nil {
+		return order, fmt.Errorf("failed to get receipt items: %w", err)
 	}
 
 	return

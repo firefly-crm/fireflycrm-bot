@@ -83,7 +83,7 @@ func (o Order) MessageString() string {
 	var amount float32
 	if o.ReceiptItems != nil {
 		for _, i := range o.ReceiptItems {
-			price := float32(i.Price) / 100.0
+			price := float32(i.Price*i.Quantity) / 100.0
 			amount += price
 			result += fmt.Sprintf("- %s\t\t%.2f₽\tx%d\n", i.Name, price, i.Quantity)
 		}

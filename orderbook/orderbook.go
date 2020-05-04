@@ -20,9 +20,11 @@ type (
 		GetActiveOrderForUser(ctx context.Context, userId uint64) (types.Order, error)
 		UpdateReceiptItemName(ctx context.Context, name string, userId, receiptItemId uint64) (err error)
 		UpdateReceiptItemPrice(ctx context.Context, price uint32, receiptItemId uint64) (err error)
+		UpdateReceiptItemQty(ctx context.Context, qty int, receiptItemId uint64) (err error)
 		GetReceiptItem(ctx context.Context, receiptItemId uint64) (item types.ReceiptItem, err error)
 		GetReceiptItems(ctx context.Context, orderId uint64) (items []types.ReceiptItem, err error)
 		GetOrder(ctx context.Context, orderId uint64) (order types.Order, err error)
+		SetActiveItemId(ctx context.Context, orderId uint64, receiptItemId uint64) error
 	}
 
 	orderBook struct {
@@ -56,6 +58,10 @@ func (ob orderBook) UpdateReceiptItemPrice(ctx context.Context, price uint32, re
 	return ob.storage.UpdateReceiptItemPrice(ctx, price, receiptItemId)
 }
 
+func (ob orderBook) UpdateReceiptItemQty(ctx context.Context, qty int, receiptItemId uint64) (err error) {
+	return ob.storage.UpdateReceiptItemQty(ctx, qty, receiptItemId)
+}
+
 func (ob orderBook) GetReceiptItem(ctx context.Context, receiptItemId uint64) (item types.ReceiptItem, err error) {
 	return ob.storage.GetReceiptItem(ctx, receiptItemId)
 }
@@ -66,4 +72,8 @@ func (ob orderBook) GetReceiptItems(ctx context.Context, orderId uint64) (items 
 
 func (ob orderBook) GetOrder(ctx context.Context, orderId uint64) (order types.Order, err error) {
 	return ob.storage.GetOrder(ctx, orderId)
+}
+
+func (ob orderBook) SetActiveItemId(ctx context.Context, orderId uint64, receiptItemId uint64) error {
+	return ob.storage.SetActiveItemId(ctx, orderId, receiptItemId)
 }
