@@ -133,7 +133,6 @@ func (s Service) processPrompt(ctx context.Context, bot *tg.BotAPI, update tg.Up
 			return fmt.Errorf("active payment id doesnt exists")
 		}
 
-		text = strings.Trim(text, "₽р$РP")
 		amount, err := strconv.Atoi(text)
 		if err != nil {
 			return fmt.Errorf("failed to parse amount: %w", err)
@@ -142,6 +141,22 @@ func (s Service) processPrompt(ctx context.Context, bot *tg.BotAPI, update tg.Up
 		err = s.processPaymentCallback(ctx, bot, activeOrder.MessageId, uint32(amount*100))
 		if err != nil {
 			return fmt.Errorf("failed to proces payment callback")
+		}
+
+		break
+	case types.WaitingRefundAmount:
+		if !activeOrder.ActivePaymentId.Valid {
+			return fmt.Errorf("active payment id doesnt exists")
+		}
+
+		amount, err := strconv.Atoi(text)
+		if err != nil {
+			return fmt.Errorf("failed to parse amount: %w", err)
+		}
+
+		err = s.processRefundCallback(ctx, bot, activeOrder.MessageId, uint32(amount*100))
+		if err != nil {
+			return fmt.Errorf("failed to proces refund callback")
 		}
 
 		break

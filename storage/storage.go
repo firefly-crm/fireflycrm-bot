@@ -35,6 +35,8 @@ type (
 		AddPayment(ctx context.Context, orderId uint64, method types.PaymentMethod) (uint64, error)
 		RemovePayment(ctx context.Context, paymentId uint64) error
 		UpdatePaymentAmount(ctx context.Context, paymentId uint64, amount uint32) error
+		RefundPayment(ctx context.Context, paymentId uint64, amount uint32) error
+		SetActivePaymentId(ctx context.Context, orderId, paymentId uint64) error
 	}
 
 	storage struct {
@@ -42,12 +44,49 @@ type (
 	}
 )
 
+func (s storage) RefundPayment(ctx context.Context, paymentId uint64, amount uint32) error {
+	const updateRefundQuery = `UPDATE payments SET refund_amount=$2 WHERE id=$1`
+	const updateActivePayment = `UPDATE orders SET active_payment_id=NULL WHERE id=(SELECT order_id FROM payments WHERE id=$1)`
+
+	tx, err := s.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("failed to start transaction: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		} else {
+			_ = tx.Commit()
+		}
+	}()
+
+	_, err = tx.Exec(updateRefundQuery, paymentId, amount)
+	if err != nil {
+		return fmt.Errorf("failed to update refund amount: %w", err)
+	}
+
+	_, err = tx.Exec(updateActivePayment, paymentId)
+	if err != nil {
+		return fmt.Errorf("failed to updat active payment: %w", err)
+	}
+	return nil
+}
+
 var (
 	ErrNoSuchUser = errors.New("no such user")
 )
 
 func NewStorage(db *sqlx.DB) Storage {
 	return storage{db}
+}
+
+func (s storage) SetActivePaymentId(ctx context.Context, orderId, paymentId uint64) error {
+	const updateQuery = `UPDATE orders SET active_payment_id=$2 WHERE id=$1`
+	_, err := s.db.Exec(updateQuery, orderId, paymentId)
+	if err != nil {
+		return fmt.Errorf("faield to set active payment id: %w", err)
+	}
+	return nil
 }
 
 func (s storage) UpdatePaymentAmount(ctx context.Context, paymentId uint64, amount uint32) error {

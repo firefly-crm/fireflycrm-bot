@@ -22,6 +22,7 @@ const (
 	WaitingCustomerPhone
 	WaitingCustomerName
 	WaitingPaymentAmount
+	WaitingRefundAmount
 	Completed = 99
 )
 
@@ -75,6 +76,7 @@ type (
 		State           OrderState    `db:"state"`
 		Amount          uint32        `db:"amount"`
 		PayedAmount     uint32        `db:"payed_amount"`
+		RefundAmount    uint32        `db:"refund_amount"`
 		CreatedAt       time.Time     `db:"created_at"`
 		UpdatedAt       time.Time     `db:"updated_at"`
 		ReceiptItems    []ReceiptItem
@@ -89,6 +91,7 @@ type (
 		PaymentLink   string        `db:"payment_link"`
 		Payed         bool          `db:"payed"`
 		Refunded      bool          `db:"refunded"`
+		RefundAmount  uint32        `db:"refund_amount"`
 		CreatedAt     time.Time     `db:"created_at"`
 		UpdatedAt     time.Time     `db:"updated_at"`
 		PayedAt       sql.NullTime  `db:"payed_at"`
@@ -119,6 +122,15 @@ func (o Order) MessageString(c *Customer) string {
 			result += fmt.Sprintf("*Оплачено:* %.2f₽\n", payedAmount)
 			restAmount := float32(o.Amount-o.PayedAmount) / 100.0
 			result += fmt.Sprintf("*Остаток:* %.2f₽\n", restAmount)
+		}
+	}
+
+	if o.RefundAmount != 0 {
+		if o.RefundAmount == o.Amount {
+			result += "*Возврат:* в полном объеме\n"
+		} else {
+			refundAmount := float32(o.RefundAmount) / 100.0
+			result += fmt.Sprintf("*Возвращено:* %.2f₽\n", refundAmount)
 		}
 	}
 
@@ -192,6 +204,15 @@ func (p Payment) MessageString(id int) string {
 	} else {
 		payedAt := p.PayedAt.Time.In(loc).Format("02 Jan 2006 15:04")
 		result += fmt.Sprintf("\n*Оплачен:* %s", payedAt)
+	}
+
+	if p.RefundAmount != 0 {
+		refundAmount := float32(p.RefundAmount) / 100.0
+		if p.RefundAmount == p.Amount {
+			result += fmt.Sprintf("\n*Возвращен:* в полном объеме")
+		} else {
+			result += fmt.Sprintf("\n*Возвращено:* %.2f₽", refundAmount)
+		}
 	}
 
 	return result

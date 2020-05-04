@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"github.com/DarthRamone/fireflycrm-bot/types"
 	tg "github.com/go-telegram-bot-api/telegram-bot-api"
@@ -21,16 +23,33 @@ func (s Service) processCancelCallback(ctx context.Context, bot *tg.BotAPI, call
 	}
 
 	if order.ActiveItemId.Valid {
-		err = s.OrderBook.RemoveItem(ctx, uint64(order.ActiveItemId.Int64))
-		if err != nil {
-			return fmt.Errorf("failed to delete receipt item: %w", err)
+		receiptItem, err := s.OrderBook.GetReceiptItem(ctx, uint64(order.ActiveItemId.Int64))
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return fmt.Errorf("failed to get receipt item: %w", err)
+		}
+
+		if err == nil && !receiptItem.Initialised {
+			err = s.OrderBook.RemoveItem(ctx, uint64(order.ActiveItemId.Int64))
+			if err != nil {
+				return fmt.Errorf("failed to delete receipt item: %w", err)
+			}
 		}
 	}
 
 	if order.ActivePaymentId.Valid {
-		err = s.OrderBook.RemovePayment(ctx, uint64(order.ActivePaymentId.Int64))
-		if err != nil {
-			return fmt.Errorf("failed to delete payment item: %w", err)
+		var payment types.Payment
+		for _, p := range order.Payments {
+			if p.Id == uint64(order.ActivePaymentId.Int64) {
+				payment = p
+				break
+			}
+		}
+
+		if payment.Amount == 0 {
+			err = s.OrderBook.RemovePayment(ctx, uint64(order.ActivePaymentId.Int64))
+			if err != nil {
+				return fmt.Errorf("failed to delete payment item: %w", err)
+			}
 		}
 	}
 

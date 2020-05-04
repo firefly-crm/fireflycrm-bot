@@ -20,6 +20,8 @@ var (
 	kbPaymentCash    = "Наличные"
 	kbFullPayment    = "Полная оплата"
 	kbPartialPayment = "Частичная оплата"
+	kbFullRefund     = "Полный возврат"
+	kbPartialRefund  = "Частичный возврат"
 	kbRefundPayment  = "Возврат"
 )
 
@@ -37,6 +39,8 @@ var (
 	kbDataPaymentCash    = "payment_cash"
 	kbDataFullPayment    = "full_payment"
 	kbDataPartialPayment = "partial_payment"
+	kbDataFullRefund     = "full_refund"
+	kbDataPartialRefund  = "partial_refund"
 	kbDataRemovePayment  = "order_remove_payment"
 	kbDataRefundPayment  = "order_refund_payment"
 )

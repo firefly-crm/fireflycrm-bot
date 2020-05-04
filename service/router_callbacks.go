@@ -111,6 +111,18 @@ func (s Service) processCallback(ctx context.Context, bot *tg.BotAPI, update tg.
 		if err != nil {
 			return fmt.Errorf("failed to get payments list markup: %w", err)
 		}
+	case kbDataPartialRefund:
+		markup = cancelInlineKeyboard()
+		err := s.processPartialRefundCallback(ctx, bot, callbackQuery)
+		if err != nil {
+			return fmt.Errorf("failed to process partial refund callback: %w", err)
+		}
+	case kbDataFullRefund:
+		markup = startOrderInlineKeyboard()
+		err := s.processRefundCallback(ctx, bot, uint64(messageId), 0)
+		if err != nil {
+			return fmt.Errorf("failed to process refund callback: %w", err)
+		}
 	case kbDataRemovePayment:
 		var err error
 		markup, err = paymentsListInlineKeyboard(ctx, s, uint64(messageId), "remove")
@@ -153,6 +165,16 @@ func (s Service) processCallback(ctx context.Context, bot *tg.BotAPI, update tg.
 				markup = startOrderInlineKeyboard()
 				break
 			case "refund":
+				order, err := s.OrderBook.GetOrderByMessageId(ctx, uint64(messageId))
+				if err != nil {
+					return fmt.Errorf("failed to get order: %w", err)
+				}
+				err = s.OrderBook.SetActivePaymentId(ctx, order.Id, id)
+				if err != nil {
+					return fmt.Errorf("failed to set active refund payment: %w", err)
+				}
+				markup = refundAmountInlineKeyboard()
+				break
 			}
 		}
 

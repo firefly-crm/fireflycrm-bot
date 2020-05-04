@@ -25,8 +25,10 @@ type (
 		GetReceiptItem(ctx context.Context, receiptItemId uint64) (item types.ReceiptItem, err error)
 		GetOrder(ctx context.Context, orderId uint64) (order types.Order, err error)
 		SetActiveItemId(ctx context.Context, orderId uint64, receiptItemId uint64) error
+		SetActivePaymentId(ctx context.Context, orderId uint64, paymentId uint64) error
 		AddPayment(context context.Context, orderId uint64, method types.PaymentMethod) (uint64, error)
 		RemovePayment(ctx context.Context, paymentId uint64) error
+		RefundPayment(ctx context.Context, paymentId uint64, amount uint32) error
 		UpdatePaymentAmount(ctx context.Context, paymentId uint64, amount uint32) error
 	}
 
@@ -77,6 +79,10 @@ func (ob orderBook) SetActiveItemId(ctx context.Context, orderId uint64, receipt
 	return ob.storage.SetActiveItemId(ctx, orderId, receiptItemId)
 }
 
+func (ob orderBook) SetActivePaymentId(ctx context.Context, orderId uint64, paymentId uint64) error {
+	return ob.storage.SetActivePaymentId(ctx, orderId, paymentId)
+}
+
 func (ob orderBook) UpdateCustomerEmail(ctx context.Context, email string, orderId uint64) (uint64, error) {
 	return ob.storage.UpdateCustomerEmail(ctx, email, orderId)
 }
@@ -91,4 +97,8 @@ func (ob orderBook) RemovePayment(ctx context.Context, paymentId uint64) error {
 
 func (ob orderBook) UpdatePaymentAmount(ctx context.Context, paymentId uint64, amount uint32) error {
 	return ob.storage.UpdatePaymentAmount(ctx, paymentId, amount)
+}
+
+func (ob orderBook) RefundPayment(ctx context.Context, paymentId uint64, amount uint32) error {
+	return ob.storage.RefundPayment(ctx, paymentId, amount)
 }

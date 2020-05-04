@@ -9,6 +9,7 @@ CREATE TABLE orders
     description       TEXT        NOT NULL DEFAULT '',
     amount            INT         NOT NULL DEFAULT 0,
     payed_amount      INT         NOT NULL DEFAULT 0,
+    refund_amount     INT         NOT NULL DEFAULT 0,
     active_item_id    BIGINT      REFERENCES receipt_items ON DELETE SET NULL,
     active_payment_id BIGINT      REFERENCES payments ON DELETE SET NULL,
     hint_message_id   BIGINT,

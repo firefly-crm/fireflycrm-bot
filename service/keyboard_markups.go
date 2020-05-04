@@ -86,6 +86,15 @@ func paymentsListInlineKeyboard(ctx context.Context, s Service, messageId uint64
 		if p.PaymentMethod == types.Acquiring && p.Payed {
 			continue
 		}
+
+		if action == "refund" && !p.Payed {
+			continue
+		}
+
+		if action == "refund" && p.RefundAmount == p.Amount {
+			continue
+		}
+
 		name := fmt.Sprintf("Платеж #%d", i+1)
 		button := tg.NewInlineKeyboardButtonData(name, fmt.Sprintf("payment_%s_%d", action, p.Id))
 		markups = append(markups, []tg.InlineKeyboardButton{button})
@@ -128,6 +137,19 @@ func paymentInlineKeyboard() tg.InlineKeyboardMarkup {
 func paymentAmountInlineKeyboard() tg.InlineKeyboardMarkup {
 	fullButton := tg.NewInlineKeyboardButtonData(kbFullPayment, kbDataFullPayment)
 	partialButton := tg.NewInlineKeyboardButtonData(kbPartialPayment, kbDataPartialPayment)
+	cancelButton := tg.NewInlineKeyboardButtonData(kbCancel, kbDataCancel)
+
+	markups := [][]tg.InlineKeyboardButton{
+		{fullButton},
+		{partialButton},
+		{cancelButton},
+	}
+	return tg.NewInlineKeyboardMarkup(markups...)
+}
+
+func refundAmountInlineKeyboard() tg.InlineKeyboardMarkup {
+	fullButton := tg.NewInlineKeyboardButtonData(kbFullRefund, kbDataFullRefund)
+	partialButton := tg.NewInlineKeyboardButtonData(kbPartialRefund, kbDataPartialRefund)
 	cancelButton := tg.NewInlineKeyboardButtonData(kbCancel, kbDataCancel)
 
 	markups := [][]tg.InlineKeyboardButton{
