@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"github.com/DarthRamone/fireflycrm-bot/types"
 	tg "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/sirupsen/logrus"
 	"strconv"
@@ -13,6 +14,8 @@ func (s Service) processCallback(ctx context.Context, bot *tg.BotAPI, update tg.
 	callbackQuery := update.CallbackQuery
 	chatId := callbackQuery.Message.Chat.ID
 	messageId := callbackQuery.Message.MessageID
+
+	var paymentMethod types.PaymentMethod
 
 	var markup tg.InlineKeyboardMarkup
 	callbackData := callbackQuery.Data
@@ -40,19 +43,87 @@ func (s Service) processCallback(ctx context.Context, bot *tg.BotAPI, update tg.
 			return fmt.Errorf("failed to process add item callback: %w", err)
 		}
 		break
+	case kbDataRemoveItem:
+		var err error
+		markup, err = itemsListInlineKeyboard(ctx, s, uint64(messageId), "remove")
+		if err != nil {
+			return fmt.Errorf("failed to get markup for remove items list: %w", err)
+		}
+		break
 	case kbDataEditItem:
 		var err error
-		markup, err = itemsListInlineKeyboard(ctx, s, uint64(messageId))
+		markup, err = itemsListInlineKeyboard(ctx, s, uint64(messageId), "edit")
 		if err != nil {
-			return fmt.Errorf("failed to get markup for items list: %w", err)
+			return fmt.Errorf("failed to get markup for edit items list: %w", err)
+		}
+		break
+	case kbDataCustomer:
+		var err error
+		markup, err = customerInlineKeyboard(ctx, s, uint64(messageId))
+		if err != nil {
+			return fmt.Errorf("failed to get markup for customer action: %w", err)
+		}
+		break
+	case kbDataPayment:
+		markup = paymentInlineKeyboard()
+		break
+	case kbDataPaymentCard:
+		paymentMethod = types.Card2Card
+		markup = paymentAmountInlineKeyboard()
+		err := s.processAddPaymentCallback(ctx, callbackQuery, paymentMethod)
+		if err != nil {
+			return fmt.Errorf("failed to add card payment to order: %w", err)
+		}
+		break
+	case kbDataPaymentCash:
+		paymentMethod = types.Cash
+		markup = paymentAmountInlineKeyboard()
+		err := s.processAddPaymentCallback(ctx, callbackQuery, paymentMethod)
+		if err != nil {
+			return fmt.Errorf("failed to add cash payment to order: %w", err)
+		}
+		break
+	case kbDataPaymentLink:
+		paymentMethod = types.Acquiring
+		markup = paymentAmountInlineKeyboard()
+		err := s.processAddPaymentCallback(ctx, callbackQuery, paymentMethod)
+		if err != nil {
+			return fmt.Errorf("failed to add link payment to order: %w", err)
+		}
+		break
+	case kbDataFullPayment:
+		markup = startOrderInlineKeyboard()
+		err := s.processPaymentCallback(ctx, bot, uint64(messageId), 0)
+		if err != nil {
+			return fmt.Errorf("failed to process full payment callback: %w", err)
+		}
+		break
+	case kbDataPartialPayment:
+		markup = cancelInlineKeyboard()
+		err := s.processPartialPaymentCallback(ctx, bot, callbackQuery)
+		if err != nil {
+			return fmt.Errorf("failed to process partial payment callback: %w", err)
 		}
 		break
 	default:
 		args := strings.Split(callbackData, "_")
 		entity := args[0]
-		//action := args[1]
+		action := args[1]
 
 		argsCount := len(args)
+
+		if entity == "customer" {
+			switch args[2] {
+			case "name":
+			case "email":
+				markup = cancelInlineKeyboard()
+				err := s.processCustomerEditEmail(ctx, bot, callbackQuery)
+				if err != nil {
+					return fmt.Errorf("failed to process item edit name callback: %w", err)
+				}
+			case "phone":
+			}
+		}
 
 		if entity == "item" {
 			if argsCount == 3 {
@@ -60,7 +131,17 @@ func (s Service) processCallback(ctx context.Context, bot *tg.BotAPI, update tg.
 				if err != nil {
 					return fmt.Errorf("failed to parse id: %w", err)
 				}
-				markup = editItemActionsInlineKeyboard(id)
+
+				if action == "edit" {
+					markup = editItemActionsInlineKeyboard(id)
+				}
+
+				if action == "remove" {
+					err := s.processItemRemove(ctx, bot, callbackQuery, id)
+					if err != nil {
+						return fmt.Errorf("failed to remove item: %w", err)
+					}
+				}
 			}
 
 			if argsCount == 4 {

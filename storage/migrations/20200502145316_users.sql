@@ -2,26 +2,28 @@
 -- +goose StatementBegin
 CREATE TABLE users
 (
-    id              BIGINT  NOT NULL PRIMARY KEY,
-    chat_id         BIGINT  NOT NULL,
-    is_merchant     BOOLEAN NOT NULL DEFAULT FALSE,
+    id              BIGINT      NOT NULL PRIMARY KEY,
+    is_merchant     BOOLEAN     NOT NULL DEFAULT FALSE,
     active_order_id BIGINT REFERENCES orders,
     merchant_id     TEXT,
-    secret_key      TEXT
+    secret_key      TEXT,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-CREATE INDEX users_chat_id_idx ON users (chat_id);
 
 CREATE TABLE customers
 (
-    id     BIGSERIAL NOT NULL PRIMARY KEY,
-    name   TEXT,
-    email  TEXT,
-    phone  TEXT,
-    social TEXT
+    id         BIGSERIAL   NOT NULL PRIMARY KEY,
+    name       TEXT        NOT NULL DEFAULT '',
+    email      TEXT        NOT NULL DEFAULT '',
+    phone      TEXT        NOT NULL DEFAULT '',
+    social     TEXT        NOT NULL DEFAULT '',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-CREATE INDEX customers_insta_idx ON customers (social);
-CREATE INDEX customers_phone_idx ON customers (phone);
-CREATE INDEX customers_email_idx ON customers (email);
+CREATE UNIQUE INDEX customers_insta_idx ON customers (social);
+CREATE UNIQUE INDEX customers_phone_idx ON customers (phone);
+CREATE UNIQUE INDEX customers_email_idx ON customers (email);
 
 -- +goose StatementEnd
 

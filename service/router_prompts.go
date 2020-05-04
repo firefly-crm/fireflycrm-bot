@@ -4,59 +4,12 @@ import (
 	"context"
 	"fmt"
 	"github.com/DarthRamone/fireflycrm-bot/types"
+	"github.com/badoux/checkmail"
 	tg "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/sirupsen/logrus"
 	"strconv"
 	"strings"
 )
-
-func (s Service) deleteHint(ctx context.Context, bot *tg.BotAPI, order types.Order) error {
-	if !order.HintMessageId.Valid {
-		return fmt.Errorf("hint id is nil")
-	}
-
-	deleteMessage := tg.NewDeleteMessage(int64(order.UserId), int(order.HintMessageId.Int64))
-	_, err := bot.Send(deleteMessage)
-	if err != nil {
-		return fmt.Errorf("failed to delete hind: %w", err)
-	}
-
-	markup := startOrderInlineKeyboard()
-	editMarkup := tg.NewEditMessageReplyMarkup(int64(order.UserId), int(order.HintMessageId.Int64), markup)
-	_, err = bot.Send(editMarkup)
-	if err != nil {
-		return fmt.Errorf("failed to send new markup: %w", err)
-	}
-
-	return nil
-}
-
-func (s Service) updateOrderMessage(ctx context.Context, bot *tg.BotAPI, orderId uint64, flowCompleted bool) error {
-	order, err := s.OrderBook.GetOrder(ctx, orderId)
-	if err != nil {
-		return fmt.Errorf("failed to get order: %w", err)
-	}
-
-	chatId := int64(order.UserId)
-	messageId := int(order.MessageId)
-
-	editMessage := tg.NewEditMessageText(chatId, messageId, order.MessageString())
-	editMessage.ParseMode = "markdown"
-	var markup tg.InlineKeyboardMarkup
-	if flowCompleted {
-		markup = startOrderInlineKeyboard()
-	} else {
-		markup = cancelInlineKeyboard()
-	}
-	editMessage.ReplyMarkup = &markup
-
-	_, err = bot.Send(editMessage)
-	if err != nil {
-		return fmt.Errorf("failed to send message: %w", err)
-	}
-
-	return nil
-}
 
 func (s Service) processPrompt(ctx context.Context, bot *tg.BotAPI, update tg.Update) error {
 	userId := uint64(update.Message.From.ID)
@@ -65,9 +18,25 @@ func (s Service) processPrompt(ctx context.Context, bot *tg.BotAPI, update tg.Up
 		return fmt.Errorf("failed to get active order for user: %w", err)
 	}
 
+	deleteHint := true
+	standBy := true
 	flowCompleted := true
 
 	defer func() {
+		if deleteHint {
+			err = s.deleteHint(ctx, bot, activeOrder)
+			if err != nil {
+				logrus.Errorf("failed to remove hint: %v", err)
+			}
+		}
+
+		if standBy {
+			err = s.OrderBook.UpdateOrderState(ctx, activeOrder.Id, types.StandBy)
+			if err != nil {
+				logrus.Errorf("failed to set standby mode: %w", err)
+			}
+		}
+
 		delMessage := tg.NewDeleteMessage(update.Message.Chat.ID, update.Message.MessageID)
 		_, err := bot.Send(delMessage)
 		if err != nil {
@@ -106,11 +75,8 @@ func (s Service) processPrompt(ctx context.Context, bot *tg.BotAPI, update tg.Up
 				return fmt.Errorf("failed to change order state: %w", err)
 			}
 			flowCompleted = false
-		} else {
-			err := s.deleteHint(ctx, bot, activeOrder)
-			if err != nil {
-				return fmt.Errorf("failed to remove hint: %w", err)
-			}
+			deleteHint = false
+			standBy = false
 		}
 
 		break
@@ -118,6 +84,8 @@ func (s Service) processPrompt(ctx context.Context, bot *tg.BotAPI, update tg.Up
 		if !activeOrder.ActiveItemId.Valid {
 			return fmt.Errorf("active order item id doesnt exists")
 		}
+
+		text = strings.Trim(text, "₽р$РP")
 
 		price, err := strconv.Atoi(text)
 		if err != nil {
@@ -128,11 +96,6 @@ func (s Service) processPrompt(ctx context.Context, bot *tg.BotAPI, update tg.Up
 		err = s.OrderBook.UpdateReceiptItemPrice(ctx, uint32(price*100), receiptItemId)
 		if err != nil {
 			return fmt.Errorf("failed to change item price: %w", err)
-		}
-
-		err = s.deleteHint(ctx, bot, activeOrder)
-		if err != nil {
-			return fmt.Errorf("failed to remove hint: %w", err)
 		}
 
 		break
@@ -152,9 +115,33 @@ func (s Service) processPrompt(ctx context.Context, bot *tg.BotAPI, update tg.Up
 			return fmt.Errorf("failed to change item quantity: %w", err)
 		}
 
-		err = s.deleteHint(ctx, bot, activeOrder)
+		break
+	case types.WaitingCustomerEmail:
+		err = checkmail.ValidateFormat(text)
 		if err != nil {
-			return fmt.Errorf("failed to remove hint: %w", err)
+			return fmt.Errorf("email validation failed: %w", err)
+		}
+
+		_, err = s.OrderBook.UpdateCustomerEmail(ctx, text, activeOrder.Id)
+		if err != nil {
+			return fmt.Errorf("failed to update customer email: %w", err)
+		}
+
+		break
+	case types.WaitingPaymentAmount:
+		if !activeOrder.ActivePaymentId.Valid {
+			return fmt.Errorf("active payment id doesnt exists")
+		}
+
+		text = strings.Trim(text, "₽р$РP")
+		amount, err := strconv.Atoi(text)
+		if err != nil {
+			return fmt.Errorf("failed to parse amount: %w", err)
+		}
+
+		err = s.processPaymentCallback(ctx, bot, activeOrder.MessageId, uint32(amount*100))
+		if err != nil {
+			return fmt.Errorf("failed to proces payment callback")
 		}
 
 		break

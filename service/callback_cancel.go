@@ -27,6 +27,13 @@ func (s Service) processCancelCallback(ctx context.Context, bot *tg.BotAPI, call
 		}
 	}
 
+	if order.ActivePaymentId.Valid {
+		err = s.OrderBook.RemovePayment(ctx, uint64(order.ActivePaymentId.Int64))
+		if err != nil {
+			return fmt.Errorf("failed to delete payment item: %w", err)
+		}
+	}
+
 	err = s.updateOrderMessage(ctx, bot, order.Id, true)
 	if err != nil {
 		return fmt.Errorf("failed to update order message: %w", err)

@@ -3,6 +3,7 @@ package types
 import (
 	"database/sql"
 	"fmt"
+	"time"
 )
 
 const (
@@ -11,8 +12,9 @@ const (
 )
 
 const (
-	FULL_PREPAYMENT PaymentType = iota
-	PARTIAL_PREPAYMENT
+	Acquiring PaymentMethod = iota
+	Card2Card
+	Cash
 )
 
 const (
@@ -23,6 +25,7 @@ const (
 	WaitingCustomerEmail
 	WaitingCustomerPhone
 	WaitingCustomerName
+	WaitingPaymentAmount
 	Completed = 99
 )
 
@@ -31,11 +34,11 @@ type (
 
 	ReceiptItemType byte
 
-	PaymentType byte
+	PaymentMethod byte
 
 	OrderOptions struct {
 		Description    string
-		PaymentType    PaymentType
+		PaymentType    PaymentMethod
 		CustomerName   string
 		CustomerEmail  string
 		CustomerPhone  string
@@ -50,45 +53,162 @@ type (
 		Price       uint32        `db:"price"`
 		Quantity    uint32        `db:"quantity"`
 		Initialised bool          `db:"initialised"`
+		CreatedAt   time.Time     `db:"created_at"`
+		UpdatedAt   time.Time     `db:"updated_at"`
 	}
 
 	Customer struct {
-		Id uint64
+		Id        uint64    `db:"id"`
+		Email     string    `db:"email"`
+		Phone     string    `db:"phone"`
+		Name      string    `db:"name"`
+		Social    string    `db:"social"`
+		CreatedAt time.Time `db:"created_at"`
+		UpdatedAt time.Time `db:"updated_at"`
 	}
 
 	Order struct {
-		Id            uint64        `db:"id"`
-		HintMessageId sql.NullInt64 `db:"hint_message_id"`
-		MessageId     uint64        `db:"message_id"`
-		UserId        uint64        `db:"user_id"`
-		Description   string        `db:"description"`
-		ActiveItemId  sql.NullInt64 `db:"active_item_id"`
-		State         OrderState    `db:"state"`
-		ReceiptItems  []ReceiptItem
+		Id              uint64        `db:"id"`
+		HintMessageId   sql.NullInt64 `db:"hint_message_id"`
+		MessageId       uint64        `db:"message_id"`
+		UserId          uint64        `db:"user_id"`
+		CustomerId      sql.NullInt64 `db:"customer_id"`
+		Description     string        `db:"description"`
+		ActiveItemId    sql.NullInt64 `db:"active_item_id"`
+		ActivePaymentId sql.NullInt64 `db:"active_payment_id"`
+		State           OrderState    `db:"state"`
+		Amount          uint32        `db:"amount"`
+		PayedAmount     uint32        `db:"payed_amount"`
+		CreatedAt       time.Time     `db:"created_at"`
+		UpdatedAt       time.Time     `db:"updated_at"`
+		ReceiptItems    []ReceiptItem
+		Payments        []Payment
 	}
 
-	Bill struct {
-		Id  uint64
-		Url string
+	Payment struct {
+		Id            uint64        `db:"id"`
+		OrderId       uint64        `db:"order_id"`
+		Amount        uint32        `db:"amount"`
+		PaymentMethod PaymentMethod `db:"payment_method"`
+		PaymentLink   string        `db:"payment_link"`
+		Payed         bool          `db:"payed"`
+		Refunded      bool          `db:"refunded"`
+		CreatedAt     time.Time     `db:"created_at"`
+		UpdatedAt     time.Time     `db:"updated_at"`
+		PayedAt       sql.NullTime  `db:"payed_at"`
 	}
 )
 
-func (o Order) MessageString() string {
-	result :=
-		`*Заказ №%d*
+func (o Order) MessageString(c *Customer) string {
+	loc, err := time.LoadLocation("Europe/Moscow")
+	if err != nil {
+		loc = time.Now().Location()
+	}
 
-*Позиции:*
-`
+	createdAt := o.CreatedAt.In(loc).Format("02.01.2006")
 
-	var amount float32
+	amount := float32(o.Amount) / 100.0
+
+	result := fmt.Sprintf(
+		`*Заказ #%d*
+*Создан:* %s
+*Сумма:* %.2f₽
+`, o.Id, createdAt, amount)
+
+	if o.Amount != 0 {
+		if o.PayedAmount == o.Amount {
+			result += "*Оплачен:* полностью\n"
+		} else {
+			payedAmount := float32(o.PayedAmount) / 100.0
+			result += fmt.Sprintf("*Оплачено:* %.2f₽\n", payedAmount)
+			restAmount := float32(o.Amount-o.PayedAmount) / 100.0
+			result += fmt.Sprintf("*Остаток:* %.2f₽\n", restAmount)
+		}
+	}
+
+	result += "\n*Позиции*\n"
+
 	if o.ReceiptItems != nil {
 		for _, i := range o.ReceiptItems {
-			price := float32(i.Price*i.Quantity) / 100.0
-			amount += price
+			price := float32(i.Price) / 100.0
 			result += fmt.Sprintf("- %s\t\t%.2f₽\tx%d\n", i.Name, price, i.Quantity)
 		}
 	}
-	result += fmt.Sprintf("*Итого: %.2f₽\n*", amount)
 
-	return fmt.Sprintf(result, o.Id)
+	result += "\n*Клиент*"
+	if c != nil {
+
+		if c.Name != "" {
+			result += fmt.Sprintf("\nИмя: %s", c.Name)
+		}
+
+		if c.Email != "" {
+			result += fmt.Sprintf("\nE-Mail: %s", c.Email)
+		} else {
+			result += fmt.Sprintf("\nE-Mail: ‼️ Данные не заполнены")
+		}
+
+		if c.Phone != "" {
+			result += fmt.Sprintf("\nТелефон: %s", c.Phone)
+		}
+	} else {
+		result += "\n‼️ Данные не заполнены"
+	}
+
+	result += "\n"
+
+	if o.Payments != nil {
+		result += "\n*Данные по оплате*"
+		if len(o.Payments) == 0 {
+			result += "\nНе найдено"
+		} else {
+			for i, p := range o.Payments {
+				result += fmt.Sprintf("\n%s\n", p.MessageString(i+1))
+			}
+		}
+	}
+
+	return result
+}
+
+func (p Payment) MessageString(id int) string {
+	result := fmt.Sprintf(`*Платеж #%d* %s.`, id, p.PaymentMethod.MessageString("https://modulbank.ru"))
+
+	loc, err := time.LoadLocation("Europe/Moscow")
+	if err != nil {
+		loc = time.Now().Location()
+	}
+
+	amount := float32(p.Amount) / 100.0
+	result += fmt.Sprintf("\n*Сумма:* %.2f₽", amount)
+
+	if p.PaymentMethod == Acquiring {
+		createdAt := p.CreatedAt.In(loc).Format("02 Jan 2006 15:04")
+		result += fmt.Sprintf("\n*Создан:* %s", createdAt)
+
+		if p.Payed && p.PayedAt.Valid {
+			payedAt := p.PayedAt.Time.In(loc).Format("02 Jan 2006 15:04")
+			result += fmt.Sprintf("\n*Оплачен:* %s", payedAt)
+		} else {
+			result += fmt.Sprintf("\n*Оплачен:* нет")
+		}
+	} else {
+		payedAt := p.PayedAt.Time.In(loc).Format("02 Jan 2006 15:04")
+		result += fmt.Sprintf("\n*Оплачен:* %s", payedAt)
+	}
+
+	return result
+}
+
+func (p PaymentMethod) MessageString(link string) string {
+	switch p {
+	case Card2Card:
+		return "Перевод на карту"
+	case Acquiring:
+		return fmt.Sprintf("Оплата по [ссылке](%s)", link)
+	case Cash:
+		return "Оплата наличными"
+	default:
+		return "Неизвестный тип оплаты"
+	}
 }

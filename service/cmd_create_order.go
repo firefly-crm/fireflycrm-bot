@@ -15,16 +15,7 @@ func (s Service) createOrder(ctx context.Context, bot *tg.BotAPI, update tg.Upda
 		return fmt.Errorf("failed to create order: %w", err)
 	}
 
-	messageText := fmt.Sprintf(`
-*Заказ №%d*
-
-*Позиции:*
-
-*Итого: 0.00р*
-
-*Данные клиента:*
-`, orderId)
-
+	messageText := fmt.Sprintf(`*Заказ №%d*`, orderId)
 	messageReplyMarkup := startOrderInlineKeyboard()
 
 	deleteMessage := tg.NewDeleteMessage(update.Message.Chat.ID, update.Message.MessageID)

@@ -39,7 +39,7 @@ func (s Service) startListenTGUpdates(ctx context.Context, token string) {
 
 		if err != nil {
 			//TODO: Restore state
-			logrus.Error(ctx, "failed to process message: %v", err.Error())
+			logrus.Errorf("failed to process message: %v", err.Error())
 		}
 	}
 }

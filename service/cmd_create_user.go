@@ -8,7 +8,7 @@ import (
 
 func (s Service) createUser(ctx context.Context, bot *tg.BotAPI, update tg.Update) error {
 	userId := uint64(update.Message.From.ID)
-	err := s.Users.CreateUser(ctx, userId, userId)
+	err := s.Users.CreateUser(ctx, userId)
 	if err != nil {
 		return fmt.Errorf("failed to create user: %w", err)
 	}
