@@ -3,12 +3,8 @@ package types
 import (
 	"database/sql"
 	"fmt"
+	"sort"
 	"time"
-)
-
-const (
-	GOODS ReceiptItemType = iota
-	DELIVERY
 )
 
 const (
@@ -58,13 +54,13 @@ type (
 	}
 
 	Customer struct {
-		Id        uint64    `db:"id"`
-		Email     string    `db:"email"`
-		Phone     string    `db:"phone"`
-		Name      string    `db:"name"`
-		Social    string    `db:"social"`
-		CreatedAt time.Time `db:"created_at"`
-		UpdatedAt time.Time `db:"updated_at"`
+		Id        uint64         `db:"id"`
+		Email     sql.NullString `db:"email"`
+		Phone     sql.NullString `db:"phone"`
+		Name      sql.NullString `db:"name"`
+		Social    sql.NullString `db:"social"`
+		CreatedAt time.Time      `db:"created_at"`
+		UpdatedAt time.Time      `db:"updated_at"`
 	}
 
 	Order struct {
@@ -138,18 +134,18 @@ func (o Order) MessageString(c *Customer) string {
 	result += "\n*Клиент*"
 	if c != nil {
 
-		if c.Name != "" {
-			result += fmt.Sprintf("\nИмя: %s", c.Name)
+		if c.Name.Valid {
+			result += fmt.Sprintf("\n*Имя:* %s", c.Name.String)
 		}
 
-		if c.Email != "" {
-			result += fmt.Sprintf("\nE-Mail: %s", c.Email)
+		if c.Email.Valid {
+			result += fmt.Sprintf("\n*E-Mail:* %s", c.Email.String)
 		} else {
-			result += fmt.Sprintf("\nE-Mail: ‼️ Данные не заполнены")
+			result += fmt.Sprintf("\n*E-Mail:* ‼️ Данные не заполнены")
 		}
 
-		if c.Phone != "" {
-			result += fmt.Sprintf("\nТелефон: %s", c.Phone)
+		if c.Phone.Valid {
+			result += fmt.Sprintf("\n*Телефон:* %s", c.Phone.Valid)
 		}
 	} else {
 		result += "\n‼️ Данные не заполнены"
@@ -162,6 +158,7 @@ func (o Order) MessageString(c *Customer) string {
 		if len(o.Payments) == 0 {
 			result += "\nНе найдено"
 		} else {
+			sort.Sort(PaymentsByCreatedAt(o.Payments))
 			for i, p := range o.Payments {
 				result += fmt.Sprintf("\n%s\n", p.MessageString(i+1))
 			}
@@ -172,7 +169,7 @@ func (o Order) MessageString(c *Customer) string {
 }
 
 func (p Payment) MessageString(id int) string {
-	result := fmt.Sprintf(`*Платеж #%d* %s.`, id, p.PaymentMethod.MessageString("https://modulbank.ru"))
+	result := fmt.Sprintf(`*Платеж #%d.* %s.`, id, p.PaymentMethod.MessageString("https://modulbank.ru"))
 
 	loc, err := time.LoadLocation("Europe/Moscow")
 	if err != nil {
@@ -211,4 +208,18 @@ func (p PaymentMethod) MessageString(link string) string {
 	default:
 		return "Неизвестный тип оплаты"
 	}
+}
+
+type PaymentsByCreatedAt []Payment
+
+func (p PaymentsByCreatedAt) Len() int {
+	return len(p)
+}
+
+func (p PaymentsByCreatedAt) Less(i, j int) bool {
+	return p[i].CreatedAt.Before(p[j].CreatedAt)
+}
+
+func (p PaymentsByCreatedAt) Swap(i, j int) {
+	p[i], p[j] = p[j], p[i]
 }

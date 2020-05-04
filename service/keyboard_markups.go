@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"github.com/DarthRamone/fireflycrm-bot/types"
 	tg "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
@@ -21,7 +22,7 @@ func startOrderInlineKeyboard() tg.InlineKeyboardMarkup {
 func orderItemsInlineKeyboard() tg.InlineKeyboardMarkup {
 	addItemButton := tg.NewInlineKeyboardButtonData(kbAddItem, kbDataAddItem)
 	editItemButton := tg.NewInlineKeyboardButtonData(kbEditItem, kbDataEditItem)
-	removeItemButton := tg.NewInlineKeyboardButtonData(kbRemoveItem, kbDataRemoveItem)
+	removeItemButton := tg.NewInlineKeyboardButtonData(kbRemove, kbDataRemoveItem)
 	backButton := tg.NewInlineKeyboardButtonData(kbBack, kbDataBack)
 	row1 := []tg.InlineKeyboardButton{addItemButton, removeItemButton}
 	row2 := []tg.InlineKeyboardButton{editItemButton}
@@ -72,6 +73,29 @@ func itemsListInlineKeyboard(ctx context.Context, s Service, messageId uint64, a
 	return tg.NewInlineKeyboardMarkup(markups...), nil
 }
 
+func paymentsListInlineKeyboard(ctx context.Context, s Service, messageId uint64, action string) (tg.InlineKeyboardMarkup, error) {
+	var markup tg.InlineKeyboardMarkup
+
+	order, err := s.OrderBook.GetOrderByMessageId(ctx, messageId)
+	if err != nil {
+		return markup, fmt.Errorf("failed to get payments markup: %w", err)
+	}
+
+	markups := make([][]tg.InlineKeyboardButton, 0)
+	for i, p := range order.Payments {
+		if p.PaymentMethod == types.Acquiring && p.Payed {
+			continue
+		}
+		name := fmt.Sprintf("Платеж #%d", i+1)
+		button := tg.NewInlineKeyboardButtonData(name, fmt.Sprintf("payment_%s_%d", action, p.Id))
+		markups = append(markups, []tg.InlineKeyboardButton{button})
+	}
+	backButton := tg.NewInlineKeyboardButtonData(kbBack, kbDataBack)
+	markups = append(markups, []tg.InlineKeyboardButton{backButton})
+
+	return tg.NewInlineKeyboardMarkup(markups...), nil
+}
+
 func editItemActionsInlineKeyboard(itemId uint64) tg.InlineKeyboardMarkup {
 	nameButton := tg.NewInlineKeyboardButtonData(kbName, fmt.Sprintf("item_edit_name_%d", itemId))
 	qtyButton := tg.NewInlineKeyboardButtonData(kbQty, fmt.Sprintf("item_edit_qty_%d", itemId))
@@ -93,9 +117,12 @@ func paymentInlineKeyboard() tg.InlineKeyboardMarkup {
 	cardButton := tg.NewInlineKeyboardButtonData(kbPaymentCard, kbDataPaymentCard)
 	cashButton := tg.NewInlineKeyboardButtonData(kbPaymentCash, kbDataPaymentCash)
 	row1 := []tg.InlineKeyboardButton{linkButton, cardButton, cashButton}
+	deleteButton := tg.NewInlineKeyboardButtonData(kbRemove, kbDataRemovePayment)
+	refundButton := tg.NewInlineKeyboardButtonData(kbRefundPayment, kbDataRefundPayment)
+	row2 := []tg.InlineKeyboardButton{deleteButton, refundButton}
 	cancelButton := tg.NewInlineKeyboardButtonData(kbCancel, kbDataCancel)
-	row2 := []tg.InlineKeyboardButton{cancelButton}
-	return tg.NewInlineKeyboardMarkup(row1, row2)
+	row3 := []tg.InlineKeyboardButton{cancelButton}
+	return tg.NewInlineKeyboardMarkup(row1, row2, row3)
 }
 
 func paymentAmountInlineKeyboard() tg.InlineKeyboardMarkup {

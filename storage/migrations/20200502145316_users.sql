@@ -14,10 +14,10 @@ CREATE TABLE users
 CREATE TABLE customers
 (
     id         BIGSERIAL   NOT NULL PRIMARY KEY,
-    name       TEXT        NOT NULL DEFAULT '',
-    email      TEXT        NOT NULL DEFAULT '',
-    phone      TEXT        NOT NULL DEFAULT '',
-    social     TEXT        NOT NULL DEFAULT '',
+    name       TEXT,
+    email      TEXT,
+    phone      TEXT,
+    social     TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

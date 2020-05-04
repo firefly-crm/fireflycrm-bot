@@ -105,6 +105,18 @@ func (s Service) processCallback(ctx context.Context, bot *tg.BotAPI, update tg.
 			return fmt.Errorf("failed to process partial payment callback: %w", err)
 		}
 		break
+	case kbDataRefundPayment:
+		var err error
+		markup, err = paymentsListInlineKeyboard(ctx, s, uint64(messageId), "refund")
+		if err != nil {
+			return fmt.Errorf("failed to get payments list markup: %w", err)
+		}
+	case kbDataRemovePayment:
+		var err error
+		markup, err = paymentsListInlineKeyboard(ctx, s, uint64(messageId), "remove")
+		if err != nil {
+			return fmt.Errorf("failed to get payments list markup: %w", err)
+		}
 	default:
 		args := strings.Split(callbackData, "_")
 		entity := args[0]
@@ -122,6 +134,25 @@ func (s Service) processCallback(ctx context.Context, bot *tg.BotAPI, update tg.
 					return fmt.Errorf("failed to process item edit name callback: %w", err)
 				}
 			case "phone":
+			}
+		}
+
+		if entity == "payment" {
+			strId := args[len(args)-1]
+			id, err := strconv.ParseUint(strId, 10, 64)
+			if err != nil {
+				return fmt.Errorf("failed to parse id: %w", err)
+			}
+
+			switch args[1] {
+			case "remove":
+				err := s.processPaymentRemove(ctx, bot, callbackQuery, id)
+				if err != nil {
+					return fmt.Errorf("failed to process remove payment callback: %w", err)
+				}
+				markup = startOrderInlineKeyboard()
+				break
+			case "refund":
 			}
 		}
 
