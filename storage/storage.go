@@ -38,6 +38,8 @@ type (
 		RefundPayment(ctx context.Context, paymentId uint64, amount uint32) error
 		SetActivePaymentId(ctx context.Context, orderId, paymentId uint64) error
 		GetActiveOrderMessageIdForUser(ctx context.Context, userId uint64) (uint64, error)
+		GetOrderMessage(ctx context.Context, messageId uint64) (types.OrderMessage, error)
+		UpdateOrderMessageDisplayMode(ctx context.Context, messageId uint64, mode types.DisplayMode) error
 	}
 
 	storage struct {
@@ -51,6 +53,24 @@ var (
 
 func NewStorage(db *sqlx.DB) Storage {
 	return storage{db}
+}
+
+func (s storage) UpdateOrderMessageDisplayMode(ctx context.Context, messageId uint64, mode types.DisplayMode) error {
+	const updateQuery = `UPDATE order_messages SET display_mode=$2 WHERE id=$1`
+	_, err := s.db.Exec(updateQuery, messageId, mode)
+	if err != nil {
+		return fmt.Errorf("failed to update display mode: %w", err)
+	}
+	return nil
+}
+
+func (s storage) GetOrderMessage(ctx context.Context, messageId uint64) (msg types.OrderMessage, err error) {
+	const getMessageQuery = `SELECT * FROM order_messages WHERE id=$1`
+	err = s.db.Get(&msg, getMessageQuery, messageId)
+	if err != nil {
+		return msg, fmt.Errorf("failed to get order message: %w", err)
+	}
+	return
 }
 
 func (s storage) GetActiveOrderMessageIdForUser(ctx context.Context, userId uint64) (msgId uint64, err error) {

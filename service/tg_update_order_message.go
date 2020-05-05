@@ -14,6 +14,11 @@ func (s Service) updateOrderMessage(ctx context.Context, bot *tg.BotAPI, message
 		return fmt.Errorf("failed to get order: %w", err)
 	}
 
+	orderMessage, err := s.OrderBook.GetOrderMessage(ctx, messageId)
+	if err != nil {
+		return fmt.Errorf("failed to get order message: %w", err)
+	}
+
 	var customer *types.Customer
 	if order.CustomerId.Valid {
 		c, err := s.Users.GetCustomer(ctx, uint64(order.CustomerId.Int64))
@@ -25,7 +30,7 @@ func (s Service) updateOrderMessage(ctx context.Context, bot *tg.BotAPI, message
 
 	chatId := int64(order.UserId)
 
-	editMessage := tg.NewEditMessageText(chatId, int(messageId), order.MessageString(customer))
+	editMessage := tg.NewEditMessageText(chatId, int(messageId), order.MessageString(customer, orderMessage.DisplayMode))
 	editMessage.ParseMode = "markdown"
 	editMessage.DisableWebPagePreview = true
 	var markup tg.InlineKeyboardMarkup

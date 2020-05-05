@@ -31,6 +31,8 @@ type (
 		RemovePayment(ctx context.Context, paymentId uint64) error
 		RefundPayment(ctx context.Context, paymentId uint64, amount uint32) error
 		UpdatePaymentAmount(ctx context.Context, paymentId uint64, amount uint32) error
+		GetOrderMessage(ctx context.Context, messageId uint64) (types.OrderMessage, error)
+		UpdateOrderMessageDisplayMode(ctx context.Context, messageId uint64, mode types.DisplayMode) error
 	}
 
 	orderBook struct {
@@ -58,6 +60,14 @@ func MustNewOrderBook(storage storage.Storage, modulBank modulbank.API) OrderBoo
 		panic(err)
 	}
 	return bm
+}
+
+func (ob orderBook) UpdateOrderMessageDisplayMode(ctx context.Context, messageId uint64, mode types.DisplayMode) error {
+	return ob.storage.UpdateOrderMessageDisplayMode(ctx, messageId, mode)
+}
+
+func (ob orderBook) GetOrderMessage(ctx context.Context, messageId uint64) (types.OrderMessage, error) {
+	return ob.storage.GetOrderMessage(ctx, messageId)
 }
 
 func (ob orderBook) UpdateReceiptItemName(ctx context.Context, name string, userId, receiptItemId uint64) (err error) {

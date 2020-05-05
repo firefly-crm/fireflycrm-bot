@@ -27,12 +27,20 @@ const (
 	Deleted   = 100
 )
 
+const (
+	DisplayModeFull DisplayMode = iota
+	DisplayModeCollapsed
+	DisplayModeDeleted
+)
+
 type (
 	OrderState byte
 
 	ReceiptItemType byte
 
 	PaymentMethod byte
+
+	DisplayMode byte
 
 	OrderOptions struct {
 		Description    string
@@ -96,16 +104,35 @@ type (
 		UpdatedAt     time.Time     `db:"updated_at"`
 		PayedAt       sql.NullTime  `db:"payed_at"`
 	}
+
+	OrderMessage struct {
+		Id          uint64      `db:"id"`
+		OrderId     uint64      `db:"order_id"`
+		DisplayMode DisplayMode `db:"display_mode"`
+	}
 )
 
-func (o Order) MessageString(c *Customer) string {
+func (o Order) MessageString(c *Customer, mode DisplayMode) string {
+	switch mode {
+	case DisplayModeFull:
+		return o.getFullMessageString(c)
+	case DisplayModeCollapsed:
+		return "TODO: collapsed"
+	case DisplayModeDeleted:
+		return o.getDeletedMessageString()
+	}
+
+	return ""
+}
+
+func (o Order) getDeletedMessageString() string {
+	return fmt.Sprintf("*Заказ #%d.* __Удалён__", o.Id)
+}
+
+func (o Order) getFullMessageString(c *Customer) string {
 	loc, err := time.LoadLocation("Europe/Moscow")
 	if err != nil {
 		loc = time.Now().Location()
-	}
-
-	if o.State == Deleted {
-		return fmt.Sprintf("*Заказ #%d.* __Удалён__", o.Id)
 	}
 
 	createdAt := o.CreatedAt.In(loc).Format("02.01.2006")
