@@ -18,12 +18,5 @@ func (s Service) deleteHint(ctx context.Context, bot *tg.BotAPI, order types.Ord
 		return fmt.Errorf("failed to delete hind: %w", err)
 	}
 
-	markup := startOrderInlineKeyboard()
-	editMarkup := tg.NewEditMessageReplyMarkup(int64(order.UserId), int(order.HintMessageId.Int64), markup)
-	_, err = bot.Send(editMarkup)
-	if err != nil {
-		return fmt.Errorf("failed to send new markup: %w", err)
-	}
-
 	return nil
 }

@@ -1,8 +1,16 @@
 package orderbook
 
-import "context"
+import (
+	"context"
+	"fmt"
+	"github.com/brianvoe/gofakeit"
+)
 
-//Finalizes bill and sends it to bank. Returns payment link
-func (b orderBook) GetPaymentLink(context context.Context, billId uint64) (string, error) {
-	panic("implement me")
+func (b orderBook) GeneratePaymentLink(ctx context.Context, paymentId uint64) error {
+	url := gofakeit.URL()
+	err := b.storage.UpdatePaymentLink(ctx, paymentId, url)
+	if err != nil {
+		return fmt.Errorf("failed to generate payment link: %w", err)
+	}
+	return nil
 }

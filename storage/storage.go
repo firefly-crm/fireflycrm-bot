@@ -36,11 +36,13 @@ type (
 		AddPayment(ctx context.Context, orderId uint64, method types.PaymentMethod) (uint64, error)
 		RemovePayment(ctx context.Context, paymentId uint64) error
 		UpdatePaymentAmount(ctx context.Context, paymentId uint64, amount uint32) error
+		UpdatePaymentLink(ctx context.Context, paymentId uint64, url string) error
 		RefundPayment(ctx context.Context, paymentId uint64, amount uint32) error
 		SetActivePaymentId(ctx context.Context, orderId, paymentId uint64) error
 		GetActiveOrderMessageIdForUser(ctx context.Context, userId uint64) (uint64, error)
 		GetOrderMessage(ctx context.Context, messageId uint64) (types.OrderMessage, error)
 		UpdateOrderMessageDisplayMode(ctx context.Context, messageId uint64, mode types.DisplayMode) error
+		UpdateCustomerInstagram(ctx context.Context, instagram string, orderId uint64) (uint64, error)
 	}
 
 	storage struct {
@@ -51,6 +53,41 @@ type (
 var (
 	ErrNoSuchUser = errors.New("no such user")
 )
+
+func (s storage) UpdateCustomerInstagram(ctx context.Context, instagram string, orderId uint64) (customerId uint64, err error) {
+	const createOrGetCustomerQuery = `
+INSERT INTO customers(instagram) VALUES($1)
+ON CONFLICT(instagram) DO UPDATE SET instagram=$1
+RETURNING id
+`
+	const updateCustomerIdQuery = `
+UPDATE orders SET customer_id=$2 WHERE id=$1
+`
+
+	tx, err := s.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return customerId, fmt.Errorf("failed to start transaction: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		} else {
+			_ = tx.Commit()
+		}
+	}()
+
+	err = tx.Get(&customerId, createOrGetCustomerQuery, instagram)
+	if err != nil {
+		return customerId, fmt.Errorf("failed to update customer instagram: %w", err)
+	}
+
+	_, err = tx.Exec(updateCustomerIdQuery, orderId, customerId)
+	if err != nil {
+		return customerId, fmt.Errorf("failed to update customer instagram: %w", err)
+	}
+
+	return customerId, nil
+}
 
 func NewStorage(db *sqlx.DB) Storage {
 	return storage{db}
@@ -117,6 +154,15 @@ func (s storage) SetActivePaymentId(ctx context.Context, orderId, paymentId uint
 	_, err := s.db.Exec(updateQuery, orderId, paymentId)
 	if err != nil {
 		return fmt.Errorf("faield to set active payment id: %w", err)
+	}
+	return nil
+}
+
+func (s storage) UpdatePaymentLink(ctx context.Context, paymentId uint64, url string) error {
+	const updateLinkQuery = `UPDATE payments SET payment_link=$2 WHERE id=$1`
+	_, err := s.db.Exec(updateLinkQuery, paymentId, url)
+	if err != nil {
+		return fmt.Errorf("failed to update payment link: %w", err)
 	}
 	return nil
 }

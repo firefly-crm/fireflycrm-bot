@@ -23,21 +23,29 @@ func expandOrderInlineKeyboard() tg.InlineKeyboardMarkup {
 	return tg.NewInlineKeyboardMarkup(tg.NewInlineKeyboardRow(expandButton))
 }
 
-func startOrderInlineKeyboard() tg.InlineKeyboardMarkup {
-	itemsButton := tg.NewInlineKeyboardButtonData(kbItems, kbDataItems)
-	customerButton := tg.NewInlineKeyboardButtonData(kbCustomer, kbDataCustomer)
-	paymentButton := tg.NewInlineKeyboardButtonData(kbPayment, kbDataPayment)
-	row1 := []tg.InlineKeyboardButton{
-		itemsButton,
-		customerButton,
-		paymentButton,
-	}
-	actionsButton := tg.NewInlineKeyboardButtonData(kbOrderActions, kbDataOrderActions)
-	row2 := []tg.InlineKeyboardButton{
-		actionsButton,
+func startOrderInlineKeyboard(ctx context.Context, s Service, messageId uint64) (tg.InlineKeyboardMarkup, error) {
+	var markup tg.InlineKeyboardMarkup
+
+	order, err := s.OrderBook.GetOrderByMessageId(ctx, messageId)
+	if err != nil {
+		return markup, fmt.Errorf("failed to get order for markup: %w", err)
 	}
 
-	return tg.NewInlineKeyboardMarkup(row1, row2)
+	customerButton := tg.NewInlineKeyboardButtonData(kbCustomer, kbDataCustomer)
+	paymentButton := tg.NewInlineKeyboardButtonData(kbPayment, kbDataPayment)
+	actionsButton := tg.NewInlineKeyboardButtonData(kbOrderActions, kbDataOrderActions)
+	itemsButton := tg.NewInlineKeyboardButtonData(kbItems, kbDataItems)
+
+	if order.OrderState != types.OrderStateDone {
+		row1 := []tg.InlineKeyboardButton{itemsButton, customerButton, paymentButton}
+		row2 := []tg.InlineKeyboardButton{actionsButton}
+		markup = tg.NewInlineKeyboardMarkup(row1, row2)
+	} else {
+		row1 := []tg.InlineKeyboardButton{customerButton, paymentButton, actionsButton}
+		markup = tg.NewInlineKeyboardMarkup(row1)
+	}
+
+	return markup, nil
 }
 
 func restoreDeletedOrderInlineKeyboard() tg.InlineKeyboardMarkup {
@@ -54,28 +62,34 @@ func orderActionsInlineKeyboard(ctx context.Context, s Service, messageId uint64
 		return markup, fmt.Errorf("failed to get order for markup: %w", err)
 	}
 
-	if order.OrderState == types.OrderStateForming {
-		doneButton := tg.NewInlineKeyboardButtonData(kbOrderDone, kbDataOrderDone)
-		inProgressButton := tg.NewInlineKeyboardButtonData(kbOrderInProgress, kbDataOrderInProgress)
-		rows = append(rows, []tg.InlineKeyboardButton{inProgressButton, doneButton})
+	doneButton := tg.NewInlineKeyboardButtonData(kbOrderDone, kbDataOrderDone)
+	inProgressButton := tg.NewInlineKeyboardButtonData(kbOrderInProgress, kbDataOrderInProgress)
+	collapseButton := tg.NewInlineKeyboardButtonData(kbOrderCollapse, kbDataOrderCollapse)
+	restartButton := tg.NewInlineKeyboardButtonData(kbOrderRestart, kbDataOrderRestart)
+	deleteButton := tg.NewInlineKeyboardButtonData(kbOrderDelete, kbDataOrderDelete)
+	backButton := tg.NewInlineKeyboardButtonData(kbBack, kbDataBack)
+
+	if order.OrderState == types.OrderStateForming && order.Amount > 0 {
+		row := []tg.InlineKeyboardButton{inProgressButton}
+		if order.PayedAmount == order.Amount {
+			row = append(row, doneButton)
+		}
+		rows = append(rows, row)
 	}
 
 	if order.OrderState == types.OrderStateInProgress {
-		doneButton := tg.NewInlineKeyboardButtonData(kbOrderDone, kbDataOrderDone)
-		rows = append(rows, []tg.InlineKeyboardButton{doneButton})
+		if order.PayedAmount == order.Amount {
+			rows = append(rows, []tg.InlineKeyboardButton{doneButton})
+		}
 	}
 
-	collapseButton := tg.NewInlineKeyboardButtonData(kbOrderCollapse, kbDataOrderCollapse)
 	rows = append(rows, []tg.InlineKeyboardButton{collapseButton})
 
 	if order.OrderState == types.OrderStateDone {
-		restartButton := tg.NewInlineKeyboardButtonData(kbOrderRestart, kbDataOrderRestart)
 		rows = append(rows, []tg.InlineKeyboardButton{restartButton})
 	}
 
-	deleteButton := tg.NewInlineKeyboardButtonData(kbOrderDelete, kbDataOrderDelete)
 	rows = append(rows, []tg.InlineKeyboardButton{deleteButton})
-	backButton := tg.NewInlineKeyboardButtonData(kbBack, kbDataBack)
 	rows = append(rows, []tg.InlineKeyboardButton{backButton})
 
 	return tg.NewInlineKeyboardMarkup(rows...), nil
@@ -103,11 +117,13 @@ func customerInlineKeyboard(ctx context.Context, s Service, messageId uint64) (t
 
 	//nameButton := tg.NewInlineKeyboardButtonData(kbName, fmt.Sprintf("customer_edit_name_%d", order.Id))
 	emailButton := tg.NewInlineKeyboardButtonData(kbCustomerEmail, fmt.Sprintf("customer_edit_email_%d", order.Id))
+	instaButton := tg.NewInlineKeyboardButtonData(kbCustomerInstagram, fmt.Sprintf("customer_edit_instagram_%d", order.Id))
 	//phoneButton := tg.NewInlineKeyboardButtonData(kbCustomerPhone, fmt.Sprintf("customer_edit_phone_%d", order.Id))
 	backButton := tg.NewInlineKeyboardButtonData(kbBack, kbDataBack)
 
 	markups := [][]tg.InlineKeyboardButton{
 		//{nameButton},
+		{instaButton},
 		{emailButton},
 		//{phoneButton},
 		{backButton},
@@ -194,22 +210,29 @@ func paymentInlineKeyboard(ctx context.Context, s Service, messageId uint64) (tg
 		return markup, fmt.Errorf("failed to get payments markup: %w", err)
 	}
 
+	linkButton := tg.NewInlineKeyboardButtonData(kbPaymentLink, kbDataPaymentLink)
+	cardButton := tg.NewInlineKeyboardButtonData(kbPaymentCard, kbDataPaymentCard)
+	cashButton := tg.NewInlineKeyboardButtonData(kbPaymentCash, kbDataPaymentCash)
+	deleteButton := tg.NewInlineKeyboardButtonData(kbRemove, kbDataRemovePayment)
+	refundButton := tg.NewInlineKeyboardButtonData(kbRefundPayment, kbDataRefundPayment)
+	cancelButton := tg.NewInlineKeyboardButtonData(kbCancel, kbDataCancel)
+
+	if order.Amount == 0 {
+		return tg.NewInlineKeyboardMarkup(tg.NewInlineKeyboardRow(cancelButton)), nil
+	}
+
 	if order.PayedAmount >= order.Amount {
-		deleteButton := tg.NewInlineKeyboardButtonData(kbRemove, kbDataRemovePayment)
-		refundButton := tg.NewInlineKeyboardButtonData(kbRefundPayment, kbDataRefundPayment)
-		row1 := []tg.InlineKeyboardButton{deleteButton, refundButton}
-		cancelButton := tg.NewInlineKeyboardButtonData(kbCancel, kbDataCancel)
+		var row1 []tg.InlineKeyboardButton
+		if order.OrderState == types.OrderStateDone {
+			row1 = []tg.InlineKeyboardButton{refundButton}
+		} else {
+			row1 = []tg.InlineKeyboardButton{deleteButton, refundButton}
+		}
 		row2 := []tg.InlineKeyboardButton{cancelButton}
 		markup = tg.NewInlineKeyboardMarkup(row1, row2)
 	} else {
-		linkButton := tg.NewInlineKeyboardButtonData(kbPaymentLink, kbDataPaymentLink)
-		cardButton := tg.NewInlineKeyboardButtonData(kbPaymentCard, kbDataPaymentCard)
-		cashButton := tg.NewInlineKeyboardButtonData(kbPaymentCash, kbDataPaymentCash)
 		row1 := []tg.InlineKeyboardButton{linkButton, cardButton, cashButton}
-		deleteButton := tg.NewInlineKeyboardButtonData(kbRemove, kbDataRemovePayment)
-		refundButton := tg.NewInlineKeyboardButtonData(kbRefundPayment, kbDataRefundPayment)
 		row2 := []tg.InlineKeyboardButton{deleteButton, refundButton}
-		cancelButton := tg.NewInlineKeyboardButtonData(kbCancel, kbDataCancel)
 		row3 := []tg.InlineKeyboardButton{cancelButton}
 		markup = tg.NewInlineKeyboardMarkup(row1, row2, row3)
 	}

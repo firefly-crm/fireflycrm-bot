@@ -13,6 +13,7 @@ var (
 	kbName                 = "Имя"
 	kbCustomer             = "Клиент"
 	kbCustomerEmail        = "Эл. почта"
+	kbCustomerInstagram    = "Instagram"
 	kbBack                 = "Назад"
 	kbCancel               = "Отмена"
 	kbPayment              = "Оплата"
@@ -26,7 +27,7 @@ var (
 	kbRefundPayment        = "Возврат"
 	kbOrderActions         = "Действия"
 	kbOrderDone            = "Завершить заказ"
-	kbOrderInProgress      = "В работе"
+	kbOrderInProgress      = "В работу"
 	kbOrderRestart         = "Возобновить заказ"
 	kbOrderDelete          = "Удалить заказ"
 	kbOrderRestore         = "Восстановить"
@@ -65,6 +66,7 @@ var (
 	kbDataOrderInProgress = "order_state_in_progress"
 	kbDataDelivery        = "delivery"
 	kbDataLingerieSet     = "lingerie"
+	kbDataInstagram       = "instagram"
 )
 
 var (
@@ -74,5 +76,6 @@ var (
 	replyEnterItemPrice               = "Введите стоимость"
 	replyEnterItemQty                 = "Введите количество"
 	replyEnterCustomerEmail           = "Введите адрес эл. почты"
+	replyEnterCustomerInstagram       = "Введите имя пользователя"
 	replyEnterAmount                  = "Введите сумму"
 )

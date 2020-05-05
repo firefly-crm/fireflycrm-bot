@@ -13,7 +13,7 @@ import (
 func (s Service) processCallback(ctx context.Context, bot *tg.BotAPI, update tg.Update) error {
 	callbackQuery := update.CallbackQuery
 	chatId := callbackQuery.Message.Chat.ID
-	messageId := callbackQuery.Message.MessageID
+	messageId := uint64(callbackQuery.Message.MessageID)
 
 	var paymentMethod types.PaymentMethod
 
@@ -27,11 +27,19 @@ func (s Service) processCallback(ctx context.Context, bot *tg.BotAPI, update tg.
 		markup = orderItemsInlineKeyboard()
 		break
 	case kbDataBack:
-		markup = startOrderInlineKeyboard()
+		var err error
+		markup, err = startOrderInlineKeyboard(ctx, s, messageId)
+		if err != nil {
+			return fmt.Errorf("failed to get order inline kb: %w", err)
+		}
 		break
 	case kbDataCancel:
-		markup = startOrderInlineKeyboard()
-		err := s.processCancelCallback(ctx, bot, callbackQuery)
+		var err error
+		markup, err = startOrderInlineKeyboard(ctx, s, messageId)
+		if err != nil {
+			return fmt.Errorf("failed to get order inline kb: %w", err)
+		}
+		err = s.processCancelCallback(ctx, bot, callbackQuery)
 		if err != nil {
 			return fmt.Errorf("failed to process cancel callback: %w", err)
 		}
@@ -45,28 +53,28 @@ func (s Service) processCallback(ctx context.Context, bot *tg.BotAPI, update tg.
 		break
 	case kbDataRemoveItem:
 		var err error
-		markup, err = itemsListInlineKeyboard(ctx, s, uint64(messageId), "remove")
+		markup, err = itemsListInlineKeyboard(ctx, s, messageId, "remove")
 		if err != nil {
 			return fmt.Errorf("failed to get markup for remove items list: %w", err)
 		}
 		break
 	case kbDataEditItem:
 		var err error
-		markup, err = itemsListInlineKeyboard(ctx, s, uint64(messageId), "edit")
+		markup, err = itemsListInlineKeyboard(ctx, s, messageId, "edit")
 		if err != nil {
 			return fmt.Errorf("failed to get markup for edit items list: %w", err)
 		}
 		break
 	case kbDataCustomer:
 		var err error
-		markup, err = customerInlineKeyboard(ctx, s, uint64(messageId))
+		markup, err = customerInlineKeyboard(ctx, s, messageId)
 		if err != nil {
 			return fmt.Errorf("failed to get markup for customer action: %w", err)
 		}
 		break
 	case kbDataPayment:
 		var err error
-		markup, err = paymentInlineKeyboard(ctx, s, uint64(messageId))
+		markup, err = paymentInlineKeyboard(ctx, s, messageId)
 		if err != nil {
 			return fmt.Errorf("failed to get payment inlint markup: %w", err)
 		}
@@ -96,11 +104,14 @@ func (s Service) processCallback(ctx context.Context, bot *tg.BotAPI, update tg.
 		}
 		break
 	case kbDataFullPayment:
-		err := s.processPaymentCallback(ctx, bot, uint64(messageId), 0)
+		err := s.processPaymentCallback(ctx, bot, messageId, 0)
 		if err != nil {
 			return fmt.Errorf("failed to process full payment callback: %w", err)
 		}
-		markup = startOrderInlineKeyboard()
+		markup, err = startOrderInlineKeyboard(ctx, s, messageId)
+		if err != nil {
+			return fmt.Errorf("failed to get order inline kb: %w", err)
+		}
 		break
 	case kbDataPartialPayment:
 		markup = cancelInlineKeyboard()
@@ -111,7 +122,7 @@ func (s Service) processCallback(ctx context.Context, bot *tg.BotAPI, update tg.
 		break
 	case kbDataRefundPayment:
 		var err error
-		markup, err = paymentsListInlineKeyboard(ctx, s, uint64(messageId), "refund")
+		markup, err = paymentsListInlineKeyboard(ctx, s, messageId, "refund")
 		if err != nil {
 			return fmt.Errorf("failed to get payments list markup: %w", err)
 		}
@@ -122,24 +133,27 @@ func (s Service) processCallback(ctx context.Context, bot *tg.BotAPI, update tg.
 			return fmt.Errorf("failed to process partial refund callback: %w", err)
 		}
 	case kbDataFullRefund:
-		order, err := s.OrderBook.GetOrderByMessageId(ctx, uint64(messageId))
+		order, err := s.OrderBook.GetOrderByMessageId(ctx, messageId)
 		if err != nil {
 			return fmt.Errorf("failed to get order: %w", err)
 		}
-		err = s.processRefundCallback(ctx, bot, order, uint64(messageId), 0)
+		err = s.processRefundCallback(ctx, bot, order, messageId, 0)
 		if err != nil {
 			return fmt.Errorf("failed to process refund callback: %w", err)
 		}
-		markup = startOrderInlineKeyboard()
+		markup, err = startOrderInlineKeyboard(ctx, s, messageId)
+		if err != nil {
+			return fmt.Errorf("failed to get order inline kb: %w", err)
+		}
 	case kbDataRemovePayment:
 		var err error
-		markup, err = paymentsListInlineKeyboard(ctx, s, uint64(messageId), "remove")
+		markup, err = paymentsListInlineKeyboard(ctx, s, messageId, "remove")
 		if err != nil {
 			return fmt.Errorf("failed to get payments list markup: %w", err)
 		}
 	case kbDataOrderActions:
 		var err error
-		markup, err = orderActionsInlineKeyboard(ctx, s, uint64(messageId))
+		markup, err = orderActionsInlineKeyboard(ctx, s, messageId)
 		if err != nil {
 			return fmt.Errorf("failed to get order actions markup: %w", err)
 		}
@@ -148,13 +162,19 @@ func (s Service) processCallback(ctx context.Context, bot *tg.BotAPI, update tg.
 		if err != nil {
 			return fmt.Errorf("failed to process order done callback: %w", err)
 		}
-		markup = startOrderInlineKeyboard()
+		markup, err = startOrderInlineKeyboard(ctx, s, messageId)
+		if err != nil {
+			return fmt.Errorf("failed to get order inline kb: %w", err)
+		}
 	case kbDataOrderRestart:
 		err := s.processOrderStateCallback(ctx, bot, callbackQuery, types.OrderStateForming)
 		if err != nil {
 			return fmt.Errorf("failed to process order restart callback: %w", err)
 		}
-		markup = startOrderInlineKeyboard()
+		markup, err = startOrderInlineKeyboard(ctx, s, messageId)
+		if err != nil {
+			return fmt.Errorf("failed to get order inline kb: %w", err)
+		}
 	case kbDataOrderDelete:
 		err := s.processOrderStateCallback(ctx, bot, callbackQuery, types.OrderStateDeleted)
 		if err != nil {
@@ -166,13 +186,19 @@ func (s Service) processCallback(ctx context.Context, bot *tg.BotAPI, update tg.
 		if err != nil {
 			return fmt.Errorf("failed to process order restore callback: %w", err)
 		}
-		markup = startOrderInlineKeyboard()
+		markup, err = startOrderInlineKeyboard(ctx, s, messageId)
+		if err != nil {
+			return fmt.Errorf("failed to get order inline kb: %w", err)
+		}
 	case kbDataOrderInProgress:
 		err := s.processOrderStateCallback(ctx, bot, callbackQuery, types.OrderStateInProgress)
 		if err != nil {
 			return fmt.Errorf("failed to process order restore callback: %w", err)
 		}
-		markup = startOrderInlineKeyboard()
+		markup, err = startOrderInlineKeyboard(ctx, s, messageId)
+		if err != nil {
+			return fmt.Errorf("failed to get order inline kb: %w", err)
+		}
 	case kbDataOrderCollapse:
 		err := s.processOrderDisplayModeCallback(ctx, bot, callbackQuery, types.DisplayModeCollapsed)
 		if err != nil {
@@ -184,7 +210,10 @@ func (s Service) processCallback(ctx context.Context, bot *tg.BotAPI, update tg.
 		if err != nil {
 			return fmt.Errorf("failed to process order expand callback: %w", err)
 		}
-		markup = startOrderInlineKeyboard()
+		markup, err = startOrderInlineKeyboard(ctx, s, messageId)
+		if err != nil {
+			return fmt.Errorf("failed to get order inline kb: %w", err)
+		}
 	case kbDataDelivery:
 		fallthrough
 	case kbDataLingerieSet:
@@ -203,14 +232,18 @@ func (s Service) processCallback(ctx context.Context, bot *tg.BotAPI, update tg.
 
 		if entity == "customer" {
 			switch args[2] {
-			case "name":
 			case "email":
 				markup = cancelInlineKeyboard()
 				err := s.processCustomerEditEmail(ctx, bot, callbackQuery)
 				if err != nil {
 					return fmt.Errorf("failed to process item edit name callback: %w", err)
 				}
-			case "phone":
+			case "instagram":
+				markup = cancelInlineKeyboard()
+				err := s.processCustomerEditInstagram(ctx, bot, callbackQuery)
+				if err != nil {
+					return fmt.Errorf("failed to process item edit instagram callback: %w", err)
+				}
 			}
 		}
 
@@ -227,10 +260,13 @@ func (s Service) processCallback(ctx context.Context, bot *tg.BotAPI, update tg.
 				if err != nil {
 					return fmt.Errorf("failed to process remove payment callback: %w", err)
 				}
-				markup = startOrderInlineKeyboard()
+				markup, err = startOrderInlineKeyboard(ctx, s, messageId)
+				if err != nil {
+					return fmt.Errorf("failed to get order inline kb: %w", err)
+				}
 				break
 			case "refund":
-				order, err := s.OrderBook.GetOrderByMessageId(ctx, uint64(messageId))
+				order, err := s.OrderBook.GetOrderByMessageId(ctx, messageId)
 				if err != nil {
 					return fmt.Errorf("failed to get order: %w", err)
 				}
@@ -292,7 +328,7 @@ func (s Service) processCallback(ctx context.Context, bot *tg.BotAPI, update tg.
 		}
 	}
 
-	msg := tg.NewEditMessageReplyMarkup(chatId, messageId, markup)
+	msg := tg.NewEditMessageReplyMarkup(chatId, int(messageId), markup)
 
 	_, err := bot.Send(msg)
 	if err != nil {

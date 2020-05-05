@@ -17,11 +17,11 @@ CREATE TABLE customers
     name       TEXT,
     email      TEXT,
     phone      TEXT,
-    social     TEXT,
+    instagram  TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-CREATE UNIQUE INDEX customers_insta_idx ON customers (social);
+CREATE UNIQUE INDEX customers_insta_idx ON customers (instagram);
 CREATE UNIQUE INDEX customers_phone_idx ON customers (phone);
 CREATE UNIQUE INDEX customers_email_idx ON customers (email);
 

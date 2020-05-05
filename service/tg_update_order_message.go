@@ -35,7 +35,10 @@ func (s Service) updateOrderMessage(ctx context.Context, bot *tg.BotAPI, message
 	editMessage.DisableWebPagePreview = true
 	var markup tg.InlineKeyboardMarkup
 	if flowCompleted {
-		markup = startOrderInlineKeyboard()
+		markup, err = startOrderInlineKeyboard(ctx, s, messageId)
+		if err != nil {
+			return fmt.Errorf("failed to get order inline kb: %w", err)
+		}
 	} else {
 		markup = cancelInlineKeyboard()
 	}

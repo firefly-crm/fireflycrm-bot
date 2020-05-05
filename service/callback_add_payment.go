@@ -67,6 +67,14 @@ func (s Service) processPaymentCallback(ctx context.Context, bot *tg.BotAPI, mes
 		amount = order.Amount - order.PayedAmount
 	}
 
+	var payment types.Payment
+	for _, p := range order.Payments {
+		if p.Id == paymentId {
+			payment = p
+			break
+		}
+	}
+
 	defer func() {
 		if err := s.deleteHint(ctx, bot, order); err != nil {
 			logrus.Error("failed to delete hint: %v", err)
@@ -76,6 +84,13 @@ func (s Service) processPaymentCallback(ctx context.Context, bot *tg.BotAPI, mes
 	err = s.OrderBook.UpdatePaymentAmount(ctx, paymentId, amount)
 	if err != nil {
 		return fmt.Errorf("failed to update payment amount: %w", err)
+	}
+
+	if payment.PaymentMethod == types.PaymentMethodAcquiring {
+		err := s.OrderBook.GeneratePaymentLink(ctx, paymentId)
+		if err != nil {
+			return fmt.Errorf("failed to generate payment link: %w", err)
+		}
 	}
 
 	err = s.updateOrderMessage(ctx, bot, messageId, true)

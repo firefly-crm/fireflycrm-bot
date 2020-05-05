@@ -19,8 +19,7 @@ const (
 	EditStateWaitingItemPrice
 	EditStateWaitingItemQuantity
 	EditStateWaitingCustomerEmail
-	EditStateWaitingCustomerPhone
-	EditStateWaitingCustomerName
+	EditStateWaitingCustomerInstagram
 	EditStateWaitingPaymentAmount
 	EditStateWaitingRefundAmount
 )
@@ -76,7 +75,7 @@ type (
 		Email     sql.NullString `db:"email"`
 		Phone     sql.NullString `db:"phone"`
 		Name      sql.NullString `db:"name"`
-		Social    sql.NullString `db:"social"`
+		Instagram sql.NullString `db:"instagram"`
 		CreatedAt time.Time      `db:"created_at"`
 		UpdatedAt time.Time      `db:"updated_at"`
 	}
@@ -149,7 +148,12 @@ func (o Order) getCollapsedMessageString() string {
 	}
 
 	orderState := o.OrderState.MessageString()
-	return fmt.Sprintf("*Заказ: #%d* от %s. %s. %s.", o.Id, createdAt, orderState, payed)
+	result := fmt.Sprintf("*Заказ: #%d* от %s. %s.", o.Id, createdAt, orderState)
+	if o.Amount > 0 {
+		result = fmt.Sprintf("%s %s.", result, payed)
+	}
+
+	return result
 }
 
 func (o Order) getDeletedMessageString() string {
@@ -197,7 +201,7 @@ func (o Order) getFullMessageString(c *Customer) string {
 	if o.ReceiptItems != nil {
 		for _, i := range o.ReceiptItems {
 			price := float32(i.Price) / 100.0
-			result += fmt.Sprintf("- %s\t\t%.2f₽\tx%d\n", i.Name, price, i.Quantity)
+			result += fmt.Sprintf("`- %s %.2f₽ x%d`\n", i.Name, price, i.Quantity)
 		}
 	}
 
@@ -215,8 +219,13 @@ func (o Order) getFullMessageString(c *Customer) string {
 		}
 
 		if c.Phone.Valid {
-			result += fmt.Sprintf("\n*Телефон:* %s", c.Phone.Valid)
+			result += fmt.Sprintf("\n*Телефон:* %s", c.Phone.String)
 		}
+
+		if c.Instagram.Valid {
+			result += fmt.Sprintf("\n*Instagram:* [@%[1]s](https://instagram.com/%[1]s)", c.Instagram.String)
+		}
+
 	} else {
 		result += "\n‼️ Данные не заполнены"
 	}
@@ -239,7 +248,7 @@ func (o Order) getFullMessageString(c *Customer) string {
 }
 
 func (p Payment) MessageString(id int) string {
-	result := fmt.Sprintf(`*Платеж #%d.* %s.`, id, p.PaymentMethod.MessageString("https://modulbank.ru"))
+	result := fmt.Sprintf(`*Платеж #%d.* %s.`, id, p.PaymentMethod.MessageString(p.PaymentLink))
 
 	loc, err := time.LoadLocation("Europe/Moscow")
 	if err != nil {

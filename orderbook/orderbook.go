@@ -12,7 +12,7 @@ type (
 		CreateOrder(context context.Context, userId uint64) (uint64, error)
 		AddItem(context context.Context, orderId uint64) (uint64, error)
 		RemoveItem(context context.Context, receiptItem uint64) error
-		GetPaymentLink(context context.Context, billId uint64) (string, error)
+		GeneratePaymentLink(context context.Context, paymentId uint64) error
 		GetOrderByMessageId(ctx context.Context, messageId uint64) (order types.Order, err error)
 		UpdateHintMessageForOrder(ctx context.Context, orderId, messageId uint64) error
 		UpdateMessageForOrder(ctx context.Context, orderId, messageId uint64) error
@@ -23,6 +23,7 @@ type (
 		UpdateReceiptItemPrice(ctx context.Context, price uint32, receiptItemId uint64) (err error)
 		UpdateReceiptItemQty(ctx context.Context, qty int, receiptItemId uint64) (err error)
 		UpdateCustomerEmail(ctx context.Context, email string, orderId uint64) (customerId uint64, err error)
+		UpdateCustomerInstagram(ctx context.Context, instagram string, orderId uint64) (customerId uint64, err error)
 		GetReceiptItem(ctx context.Context, receiptItemId uint64) (item types.ReceiptItem, err error)
 		GetOrder(ctx context.Context, orderId uint64) (order types.Order, err error)
 		SetActiveItemId(ctx context.Context, orderId uint64, receiptItemId uint64) error
@@ -101,6 +102,10 @@ func (ob orderBook) SetActivePaymentId(ctx context.Context, orderId uint64, paym
 
 func (ob orderBook) UpdateCustomerEmail(ctx context.Context, email string, orderId uint64) (uint64, error) {
 	return ob.storage.UpdateCustomerEmail(ctx, email, orderId)
+}
+
+func (ob orderBook) UpdateCustomerInstagram(ctx context.Context, instagram string, orderId uint64) (uint64, error) {
+	return ob.storage.UpdateCustomerInstagram(ctx, instagram, orderId)
 }
 
 func (ob orderBook) AddPayment(context context.Context, orderId uint64, method types.PaymentMethod) (uint64, error) {
