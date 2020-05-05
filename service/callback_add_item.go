@@ -9,9 +9,9 @@ import (
 
 func (s Service) processAddItemCallack(ctx context.Context, bot *tg.BotAPI, callbackQuery *tg.CallbackQuery) error {
 	chatId := callbackQuery.Message.Chat.ID
-	messageId := callbackQuery.Message.MessageID
+	messageId := uint64(callbackQuery.Message.MessageID)
 
-	order, err := s.OrderBook.GetOrderByMessageId(ctx, uint64(messageId))
+	order, err := s.OrderBook.GetOrderByMessageId(ctx, messageId)
 	if err != nil {
 		return fmt.Errorf("failed to get order by message id: %w", err)
 	}
@@ -21,7 +21,7 @@ func (s Service) processAddItemCallack(ctx context.Context, bot *tg.BotAPI, call
 		return fmt.Errorf("failed to send message: %w", err)
 	}
 
-	err = s.Users.SetActiveOrderForUser(ctx, order.UserId, order.Id)
+	err = s.Users.SetActiveOrderMessageForUser(ctx, order.UserId, messageId)
 	if err != nil {
 		return fmt.Errorf("failed to set active order for user: %w", err)
 	}

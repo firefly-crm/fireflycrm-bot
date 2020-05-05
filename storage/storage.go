@@ -18,10 +18,10 @@ type (
 		CreateUser(ctx context.Context, userId uint64) error
 		SetMerchantData(ctx context.Context, userId uint64, merchantId, secretKey string) error
 		GetOrderByMessageId(ctx context.Context, messageId uint64) (order types.Order, err error)
-		SetActiveOrderForUser(ctx context.Context, userId, orderId uint64) error
+		SetActiveOrderMessageForUser(ctx context.Context, userId, orderId uint64) error
 		GetActiveOrderForUser(ctx context.Context, userId uint64) (types.Order, error)
 		UpdateHintMessageForOrder(ctx context.Context, orderId, messageId uint64) error
-		UpdateMessageForOrder(ctx context.Context, orderId, messageId uint64) error
+		AddOrderMessage(ctx context.Context, orderId, messageId uint64) error
 		UpdateOrderState(ctx context.Context, orderId uint64, state types.OrderState) error
 		AddItemToOrder(ctx context.Context, orderId uint64) (receiptItemId uint64, err error)
 		RemoveReceiptItem(ctx context.Context, receiptItemId uint64) error
@@ -37,12 +37,31 @@ type (
 		UpdatePaymentAmount(ctx context.Context, paymentId uint64, amount uint32) error
 		RefundPayment(ctx context.Context, paymentId uint64, amount uint32) error
 		SetActivePaymentId(ctx context.Context, orderId, paymentId uint64) error
+		GetActiveOrderMessageIdForUser(ctx context.Context, userId uint64) (uint64, error)
 	}
 
 	storage struct {
 		db *sqlx.DB
 	}
 )
+
+var (
+	ErrNoSuchUser = errors.New("no such user")
+)
+
+func NewStorage(db *sqlx.DB) Storage {
+	return storage{db}
+}
+
+func (s storage) GetActiveOrderMessageIdForUser(ctx context.Context, userId uint64) (msgId uint64, err error) {
+	const activeMsgIdQuery = `SELECT active_order_msg_id FROM users WHERE id=$1`
+	err = s.db.Get(&msgId, activeMsgIdQuery, userId)
+	if err != nil {
+		return msgId, fmt.Errorf("failed to get active order message id: %w", err)
+	}
+
+	return
+}
 
 func (s storage) RefundPayment(ctx context.Context, paymentId uint64, amount uint32) error {
 	const updateRefundQuery = `UPDATE payments SET refund_amount=$2 WHERE id=$1`
@@ -70,14 +89,6 @@ func (s storage) RefundPayment(ctx context.Context, paymentId uint64, amount uin
 		return fmt.Errorf("failed to updat active payment: %w", err)
 	}
 	return nil
-}
-
-var (
-	ErrNoSuchUser = errors.New("no such user")
-)
-
-func NewStorage(db *sqlx.DB) Storage {
-	return storage{db}
 }
 
 func (s storage) SetActivePaymentId(ctx context.Context, orderId, paymentId uint64) error {
@@ -401,8 +412,14 @@ func (s storage) UpdateOrderState(ctx context.Context, orderId uint64, state typ
 
 func (s storage) GetActiveOrderForUser(ctx context.Context, userId uint64) (types.Order, error) {
 	var order types.Order
-
-	const getOrderQuery = `SELECT * FROM orders WHERE id=(SELECT active_order_id FROM users WHERE id=$1)`
+	const getOrderQuery = `
+SELECT 
+	* 
+FROM 
+	orders 
+WHERE 
+	id=(SELECT order_id FROM order_messages WHERE id=(
+	    SELECT active_order_msg_id FROM users WHERE id=$1))`
 	err := s.db.Get(&order, getOrderQuery, userId)
 	if err != nil {
 		return order, fmt.Errorf("failed to get active order for user id: %w", err)
@@ -419,19 +436,19 @@ func (s storage) UpdateHintMessageForOrder(ctx context.Context, orderId, message
 	return nil
 }
 
-func (s storage) UpdateMessageForOrder(ctx context.Context, orderId, messageId uint64) error {
-	const updateQuery = `UPDATE orders SET message_id=$1 WHERE id=$2`
-	_, err := s.db.Exec(updateQuery, messageId, orderId)
+func (s storage) AddOrderMessage(ctx context.Context, orderId, messageId uint64) error {
+	const addQuery = `INSERT INTO order_messages(id, order_id) VALUES($1,$2)`
+	_, err := s.db.Exec(addQuery, messageId, orderId)
 	if err != nil {
 		return fmt.Errorf("failed to update message id: %w", err)
 	}
 	return nil
 }
 
-func (s storage) SetActiveOrderForUser(ctx context.Context, userId, orderId uint64) error {
-	log.Printf("seting active order; userId: %d, orderId: %d", userId, orderId)
-	const setActiveOrderQuery = `UPDATE users SET active_order_id=$1 WHERE id=$2`
-	_, err := s.db.Exec(setActiveOrderQuery, orderId, userId)
+func (s storage) SetActiveOrderMessageForUser(ctx context.Context, userId, messageId uint64) error {
+	log.Printf("seting active order; userId: %d, orderId: %d", userId, messageId)
+	const setActiveOrderQuery = `UPDATE users SET active_order_msg_id=$1 WHERE id=$2`
+	_, err := s.db.Exec(setActiveOrderQuery, messageId, userId)
 	if err != nil {
 		return fmt.Errorf("failed to set active order: %w", err)
 	}
@@ -439,7 +456,9 @@ func (s storage) SetActiveOrderForUser(ctx context.Context, userId, orderId uint
 }
 
 func (s storage) GetOrderByMessageId(ctx context.Context, messageId uint64) (order types.Order, err error) {
-	const getOrderQuery = `SELECT * FROM orders WHERE  message_id=$1`
+	const getOrderIdQuery = `SELECT order_id FROM order_messages WHERE id=$1`
+
+	const getOrderQuery = `SELECT * FROM orders WHERE id=$1`
 
 	const getReceiptItemsQuery = `SELECT * FROM receipt_items WHERE order_id=$1
 `
@@ -457,7 +476,13 @@ func (s storage) GetOrderByMessageId(ctx context.Context, messageId uint64) (ord
 		}
 	}()
 
-	err = tx.Get(&order, getOrderQuery, messageId)
+	var orderId uint64
+	err = tx.Get(&orderId, getOrderIdQuery, messageId)
+	if err != nil {
+		return order, fmt.Errorf("failed to get order id from messages: %w", err)
+	}
+
+	err = tx.Get(&order, getOrderQuery, orderId)
 	if err != nil {
 		return order, fmt.Errorf("failed to get order: %w", err)
 	}

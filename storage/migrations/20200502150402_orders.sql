@@ -5,7 +5,6 @@ CREATE TABLE orders
     id                BIGSERIAL PRIMARY KEY,
     user_id           BIGINT REFERENCES users,
     customer_id       BIGINT REFERENCES customers,
-    message_id        BIGINT,
     description       TEXT        NOT NULL DEFAULT '',
     amount            INT         NOT NULL DEFAULT 0,
     payed_amount      INT         NOT NULL DEFAULT 0,

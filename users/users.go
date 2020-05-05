@@ -17,7 +17,7 @@ type (
 
 		/*
 			Set active editing order for user */
-		SetActiveOrderForUser(ctx context.Context, userId, orderId uint64) error
+		SetActiveOrderMessageForUser(ctx context.Context, userId, orderId uint64) error
 
 		GetCustomer(ctx context.Context, customerId uint64) (c Customer, err error)
 	}
@@ -39,8 +39,8 @@ func (u users) RegisterAsMerchant(ctx context.Context, userId uint64, merchantId
 	return u.storage.SetMerchantData(ctx, userId, merchantId, secretKey)
 }
 
-func (u users) SetActiveOrderForUser(ctx context.Context, userId, orderId uint64) error {
-	return u.storage.SetActiveOrderForUser(ctx, userId, orderId)
+func (u users) SetActiveOrderMessageForUser(ctx context.Context, userId, orderId uint64) error {
+	return u.storage.SetActiveOrderMessageForUser(ctx, userId, orderId)
 }
 
 func (u users) GetCustomer(ctx context.Context, customerId uint64) (c Customer, err error) {

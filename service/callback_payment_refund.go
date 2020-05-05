@@ -9,19 +9,14 @@ import (
 )
 
 func (s Service) processPaymentRefund(ctx context.Context, bot *tg.BotAPI, callbackQuery *tg.CallbackQuery, paymentId uint64, amount uint32) error {
-	messageId := callbackQuery.Message.MessageID
+	messageId := uint64(callbackQuery.Message.MessageID)
 
 	err := s.OrderBook.RefundPayment(ctx, paymentId, amount)
 	if err != nil {
 		return fmt.Errorf("failed to remove payment: %w", err)
 	}
 
-	order, err := s.OrderBook.GetOrderByMessageId(ctx, uint64(messageId))
-	if err != nil {
-		return fmt.Errorf("failed to get order by message id: %w", err)
-	}
-
-	err = s.updateOrderMessage(ctx, bot, order.Id, true)
+	err = s.updateOrderMessage(ctx, bot, messageId, true)
 	if err != nil {
 		return fmt.Errorf("failed to refresh order message: %w", err)
 	}
@@ -29,14 +24,8 @@ func (s Service) processPaymentRefund(ctx context.Context, bot *tg.BotAPI, callb
 	return nil
 }
 
-func (s Service) processRefundCallback(ctx context.Context, bot *tg.BotAPI, messageId uint64, amount uint32) error {
-
+func (s Service) processRefundCallback(ctx context.Context, bot *tg.BotAPI, order types.Order, messageId uint64, amount uint32) error {
 	//TODO: Refund payment at ModulBank
-
-	order, err := s.OrderBook.GetOrderByMessageId(ctx, messageId)
-	if err != nil {
-		return fmt.Errorf("failed to get order by message id: %w", err)
-	}
 
 	if !order.ActivePaymentId.Valid {
 		return fmt.Errorf("active payment id is nil")
@@ -57,12 +46,12 @@ func (s Service) processRefundCallback(ctx context.Context, bot *tg.BotAPI, mess
 		}
 	}()
 
-	err = s.OrderBook.RefundPayment(ctx, paymentId, amount)
+	err := s.OrderBook.RefundPayment(ctx, paymentId, amount)
 	if err != nil {
 		return fmt.Errorf("failed to refund payment: %w", err)
 	}
 
-	err = s.updateOrderMessage(ctx, bot, order.Id, true)
+	err = s.updateOrderMessage(ctx, bot, messageId, true)
 	if err != nil {
 		return fmt.Errorf("failed to update order message: %w", err)
 	}

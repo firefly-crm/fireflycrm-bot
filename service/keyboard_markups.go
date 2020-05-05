@@ -35,6 +35,11 @@ func startOrderInlineKeyboard() tg.InlineKeyboardMarkup {
 	return tg.NewInlineKeyboardMarkup(row1, row2)
 }
 
+func restoreDeletedOrderInlineKeyboard() tg.InlineKeyboardMarkup {
+	restoreButton := tg.NewInlineKeyboardButtonData(kbOrderRestore, kbDataOrderRestore)
+	return tg.NewInlineKeyboardMarkup(tg.NewInlineKeyboardRow(restoreButton))
+}
+
 func orderActionsInlineKeyboard(ctx context.Context, s Service, messageId uint64) (tg.InlineKeyboardMarkup, error) {
 	var markup tg.InlineKeyboardMarkup
 	var rows [][]tg.InlineKeyboardButton
@@ -50,7 +55,7 @@ func orderActionsInlineKeyboard(ctx context.Context, s Service, messageId uint64
 	}
 
 	if order.State == types.Completed {
-		restoreButton := tg.NewInlineKeyboardButtonData(kbOrderRestore, kbDataOrderRestore)
+		restoreButton := tg.NewInlineKeyboardButtonData(kbOrderRestart, kbDataOrderRestart)
 		rows = append(rows, []tg.InlineKeyboardButton{restoreButton})
 	}
 

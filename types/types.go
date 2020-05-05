@@ -68,7 +68,6 @@ type (
 	Order struct {
 		Id              uint64        `db:"id"`
 		HintMessageId   sql.NullInt64 `db:"hint_message_id"`
-		MessageId       uint64        `db:"message_id"`
 		UserId          uint64        `db:"user_id"`
 		CustomerId      sql.NullInt64 `db:"customer_id"`
 		Description     string        `db:"description"`
@@ -103,6 +102,10 @@ func (o Order) MessageString(c *Customer) string {
 	loc, err := time.LoadLocation("Europe/Moscow")
 	if err != nil {
 		loc = time.Now().Location()
+	}
+
+	if o.State == Deleted {
+		return fmt.Sprintf("*Заказ #%d.* __Удалён__", o.Id)
 	}
 
 	createdAt := o.CreatedAt.In(loc).Format("02.01.2006")

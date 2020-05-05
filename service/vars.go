@@ -25,8 +25,9 @@ var (
 	kbRefundPayment  = "Возврат"
 	kbOrderActions   = "Действия"
 	kbOrderDone      = "Завершить заказ"
-	kbOrderRestore   = "Возобновить заказ"
+	kbOrderRestart   = "Возобновить заказ"
 	kbOrderDelete    = "Удалить заказ"
+	kbOrderRestore   = "Восстановить"
 )
 
 var (
@@ -50,6 +51,7 @@ var (
 	kbDataOrderActions   = "order_actions"
 	kbDataOrderDone      = "order_done"
 	kbDataOrderDelete    = "order_delete"
+	kbDataOrderRestart   = "order_restart"
 	kbDataOrderRestore   = "order_restore"
 )
 

@@ -8,8 +8,8 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func (s Service) updateOrderMessage(ctx context.Context, bot *tg.BotAPI, orderId uint64, flowCompleted bool) error {
-	order, err := s.OrderBook.GetOrder(ctx, orderId)
+func (s Service) updateOrderMessage(ctx context.Context, bot *tg.BotAPI, messageId uint64, flowCompleted bool) error {
+	order, err := s.OrderBook.GetOrderByMessageId(ctx, messageId)
 	if err != nil {
 		return fmt.Errorf("failed to get order: %w", err)
 	}
@@ -24,9 +24,8 @@ func (s Service) updateOrderMessage(ctx context.Context, bot *tg.BotAPI, orderId
 	}
 
 	chatId := int64(order.UserId)
-	messageId := int(order.MessageId)
 
-	editMessage := tg.NewEditMessageText(chatId, messageId, order.MessageString(customer))
+	editMessage := tg.NewEditMessageText(chatId, int(messageId), order.MessageString(customer))
 	editMessage.ParseMode = "markdown"
 	editMessage.DisableWebPagePreview = true
 	var markup tg.InlineKeyboardMarkup

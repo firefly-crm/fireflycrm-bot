@@ -53,7 +53,7 @@ func (s Service) processCancelCallback(ctx context.Context, bot *tg.BotAPI, call
 		}
 	}
 
-	err = s.updateOrderMessage(ctx, bot, order.Id, true)
+	err = s.updateOrderMessage(ctx, bot, messageId, true)
 	if err != nil {
 		return fmt.Errorf("failed to update order message: %w", err)
 	}

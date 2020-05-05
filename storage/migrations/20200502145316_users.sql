@@ -2,13 +2,13 @@
 -- +goose StatementBegin
 CREATE TABLE users
 (
-    id              BIGINT      NOT NULL PRIMARY KEY,
-    is_merchant     BOOLEAN     NOT NULL DEFAULT FALSE,
-    active_order_id BIGINT REFERENCES orders,
-    merchant_id     TEXT,
-    secret_key      TEXT,
-    created_at      TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at      TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+    id                  BIGINT      NOT NULL PRIMARY KEY,
+    is_merchant         BOOLEAN     NOT NULL DEFAULT FALSE,
+    active_order_msg_id BIGINT REFERENCES order_messages,
+    merchant_id         TEXT,
+    secret_key          TEXT,
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE customers

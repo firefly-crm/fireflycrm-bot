@@ -18,6 +18,7 @@ type (
 		UpdateMessageForOrder(ctx context.Context, orderId, messageId uint64) error
 		UpdateOrderState(ctx context.Context, orderId uint64, state types.OrderState) error
 		GetActiveOrderForUser(ctx context.Context, userId uint64) (types.Order, error)
+		GetActiveOrderMessageIdForUser(ctx context.Context, userId uint64) (uint64, error)
 		UpdateReceiptItemName(ctx context.Context, name string, userId, receiptItemId uint64) (err error)
 		UpdateReceiptItemPrice(ctx context.Context, price uint32, receiptItemId uint64) (err error)
 		UpdateReceiptItemQty(ctx context.Context, qty int, receiptItemId uint64) (err error)
@@ -37,6 +38,10 @@ type (
 		modulBank modulbank.API
 	}
 )
+
+func (ob orderBook) GetActiveOrderMessageIdForUser(ctx context.Context, userId uint64) (uint64, error) {
+	return ob.storage.GetActiveOrderMessageIdForUser(ctx, userId)
+}
 
 //Returns new instance of bill maker
 func NewOrderBook(storage storage.Storage, modulBank modulbank.API) (OrderBook, error) {

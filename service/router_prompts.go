@@ -13,6 +13,10 @@ import (
 
 func (s Service) processPrompt(ctx context.Context, bot *tg.BotAPI, update tg.Update) error {
 	userId := uint64(update.Message.From.ID)
+	activeMessageId, err := s.OrderBook.GetActiveOrderMessageIdForUser(ctx, userId)
+	if err != nil {
+		return fmt.Errorf("failed to get active message id: %w", err)
+	}
 	activeOrder, err := s.OrderBook.GetActiveOrderForUser(ctx, userId)
 	if err != nil {
 		return fmt.Errorf("failed to get active order for user: %w", err)
@@ -43,7 +47,7 @@ func (s Service) processPrompt(ctx context.Context, bot *tg.BotAPI, update tg.Up
 			logrus.Errorf("failed to delete message: %v", err)
 		}
 
-		err = s.updateOrderMessage(ctx, bot, activeOrder.Id, flowCompleted)
+		err = s.updateOrderMessage(ctx, bot, activeMessageId, flowCompleted)
 		if err != nil {
 			logrus.Errorf("failed to update order message: %w", err)
 		}
@@ -138,7 +142,7 @@ func (s Service) processPrompt(ctx context.Context, bot *tg.BotAPI, update tg.Up
 			return fmt.Errorf("failed to parse amount: %w", err)
 		}
 
-		err = s.processPaymentCallback(ctx, bot, activeOrder.MessageId, uint32(amount*100))
+		err = s.processPaymentCallback(ctx, bot, activeOrder, activeMessageId, uint32(amount*100))
 		if err != nil {
 			return fmt.Errorf("failed to proces payment callback")
 		}
@@ -154,7 +158,7 @@ func (s Service) processPrompt(ctx context.Context, bot *tg.BotAPI, update tg.Up
 			return fmt.Errorf("failed to parse amount: %w", err)
 		}
 
-		err = s.processRefundCallback(ctx, bot, activeOrder.MessageId, uint32(amount*100))
+		err = s.processRefundCallback(ctx, bot, activeOrder, activeMessageId, uint32(amount*100))
 		if err != nil {
 			return fmt.Errorf("failed to proces refund callback")
 		}

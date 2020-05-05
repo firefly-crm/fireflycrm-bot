@@ -8,9 +8,9 @@ import (
 )
 
 func (s Service) processOrderStateCallback(ctx context.Context, bot *tg.BotAPI, callbackQuery *tg.CallbackQuery, state types.OrderState) error {
-	messageId := callbackQuery.Message.MessageID
+	messageId := uint64(callbackQuery.Message.MessageID)
 
-	order, err := s.OrderBook.GetOrderByMessageId(ctx, uint64(messageId))
+	order, err := s.OrderBook.GetOrderByMessageId(ctx, messageId)
 	if err != nil {
 		return fmt.Errorf("failed to get order by message id: %w", err)
 	}
@@ -20,7 +20,7 @@ func (s Service) processOrderStateCallback(ctx context.Context, bot *tg.BotAPI, 
 		return fmt.Errorf("failed to update order state(%s): %w", state, err)
 	}
 
-	err = s.updateOrderMessage(ctx, bot, order.Id, true)
+	err = s.updateOrderMessage(ctx, bot, messageId, true)
 	if err != nil {
 		return fmt.Errorf("failed to update order message: %w", err)
 	}
