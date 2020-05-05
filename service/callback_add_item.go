@@ -7,7 +7,7 @@ import (
 	tg "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
-func (s Service) processAddDeliveryCallback(ctx context.Context, bot *tg.BotAPI, callbackQuery *tg.CallbackQuery) error {
+func (s Service) processAddKnownItem(ctx context.Context, bot *tg.BotAPI, callbackQuery *tg.CallbackQuery, data string) error {
 	chatId := callbackQuery.Message.Chat.ID
 	messageId := uint64(callbackQuery.Message.MessageID)
 
@@ -33,7 +33,15 @@ func (s Service) processAddDeliveryCallback(ctx context.Context, bot *tg.BotAPI,
 		return fmt.Errorf("failed to add item to order")
 	}
 
-	err = s.OrderBook.UpdateReceiptItemName(ctx, kbDelivery, uint64(chatId), itemId)
+	name := "Unknown item"
+	switch data {
+	case kbDataDelivery:
+		name = "Доставка"
+	case kbDataLingerieSet:
+		name = "Комплект нижнего белья"
+	}
+
+	err = s.OrderBook.UpdateReceiptItemName(ctx, name, uint64(chatId), itemId)
 	if err != nil {
 		return fmt.Errorf("failed to set delivery name: %w", err)
 	}

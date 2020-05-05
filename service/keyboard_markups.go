@@ -82,15 +82,15 @@ func orderActionsInlineKeyboard(ctx context.Context, s Service, messageId uint64
 }
 
 func orderItemsInlineKeyboard() tg.InlineKeyboardMarkup {
-	addItemButton := tg.NewInlineKeyboardButtonData(kbAddItem, kbDataAddItem)
-	editItemButton := tg.NewInlineKeyboardButtonData(kbEditItem, kbDataEditItem)
-	removeItemButton := tg.NewInlineKeyboardButtonData(kbRemove, kbDataRemoveItem)
+	addItemButton := tg.NewInlineKeyboardButtonData(kbAddItemPictogram, kbDataAddItem)
+	editItemButton := tg.NewInlineKeyboardButtonData(kbEditItemPictogram, kbDataEditItem)
+	removeItemButton := tg.NewInlineKeyboardButtonData(kbRemovePictogram, kbDataRemoveItem)
 	backButton := tg.NewInlineKeyboardButtonData(kbBack, kbDataBack)
-	deliveryButton := tg.NewInlineKeyboardButtonData(kbDelivery, kbDataDelivery)
-	row1 := []tg.InlineKeyboardButton{addItemButton, deliveryButton, removeItemButton}
-	row2 := []tg.InlineKeyboardButton{editItemButton}
-	row3 := []tg.InlineKeyboardButton{backButton}
-	return tg.NewInlineKeyboardMarkup(row1, row2, row3)
+	deliveryButton := tg.NewInlineKeyboardButtonData(kbDeliveryPictogram, kbDataDelivery)
+	lingerieButton := tg.NewInlineKeyboardButtonData(kbLingerieSetPictogram, kbDataLingerieSet)
+	row1 := []tg.InlineKeyboardButton{addItemButton, deliveryButton, lingerieButton, editItemButton, removeItemButton}
+	row2 := []tg.InlineKeyboardButton{backButton}
+	return tg.NewInlineKeyboardMarkup(row1, row2)
 }
 
 func customerInlineKeyboard(ctx context.Context, s Service, messageId uint64) (tg.InlineKeyboardMarkup, error) {
@@ -186,17 +186,35 @@ func cancelInlineKeyboard() tg.InlineKeyboardMarkup {
 	return tg.NewInlineKeyboardMarkup(row1)
 }
 
-func paymentInlineKeyboard() tg.InlineKeyboardMarkup {
-	linkButton := tg.NewInlineKeyboardButtonData(kbPaymentLink, kbDataPaymentLink)
-	cardButton := tg.NewInlineKeyboardButtonData(kbPaymentCard, kbDataPaymentCard)
-	cashButton := tg.NewInlineKeyboardButtonData(kbPaymentCash, kbDataPaymentCash)
-	row1 := []tg.InlineKeyboardButton{linkButton, cardButton, cashButton}
-	deleteButton := tg.NewInlineKeyboardButtonData(kbRemove, kbDataRemovePayment)
-	refundButton := tg.NewInlineKeyboardButtonData(kbRefundPayment, kbDataRefundPayment)
-	row2 := []tg.InlineKeyboardButton{deleteButton, refundButton}
-	cancelButton := tg.NewInlineKeyboardButtonData(kbCancel, kbDataCancel)
-	row3 := []tg.InlineKeyboardButton{cancelButton}
-	return tg.NewInlineKeyboardMarkup(row1, row2, row3)
+func paymentInlineKeyboard(ctx context.Context, s Service, messageId uint64) (tg.InlineKeyboardMarkup, error) {
+	var markup tg.InlineKeyboardMarkup
+
+	order, err := s.OrderBook.GetOrderByMessageId(ctx, messageId)
+	if err != nil {
+		return markup, fmt.Errorf("failed to get payments markup: %w", err)
+	}
+
+	if order.PayedAmount >= order.Amount {
+		deleteButton := tg.NewInlineKeyboardButtonData(kbRemove, kbDataRemovePayment)
+		refundButton := tg.NewInlineKeyboardButtonData(kbRefundPayment, kbDataRefundPayment)
+		row1 := []tg.InlineKeyboardButton{deleteButton, refundButton}
+		cancelButton := tg.NewInlineKeyboardButtonData(kbCancel, kbDataCancel)
+		row2 := []tg.InlineKeyboardButton{cancelButton}
+		markup = tg.NewInlineKeyboardMarkup(row1, row2)
+	} else {
+		linkButton := tg.NewInlineKeyboardButtonData(kbPaymentLink, kbDataPaymentLink)
+		cardButton := tg.NewInlineKeyboardButtonData(kbPaymentCard, kbDataPaymentCard)
+		cashButton := tg.NewInlineKeyboardButtonData(kbPaymentCash, kbDataPaymentCash)
+		row1 := []tg.InlineKeyboardButton{linkButton, cardButton, cashButton}
+		deleteButton := tg.NewInlineKeyboardButtonData(kbRemove, kbDataRemovePayment)
+		refundButton := tg.NewInlineKeyboardButtonData(kbRefundPayment, kbDataRefundPayment)
+		row2 := []tg.InlineKeyboardButton{deleteButton, refundButton}
+		cancelButton := tg.NewInlineKeyboardButtonData(kbCancel, kbDataCancel)
+		row3 := []tg.InlineKeyboardButton{cancelButton}
+		markup = tg.NewInlineKeyboardMarkup(row1, row2, row3)
+	}
+
+	return markup, nil
 }
 
 func paymentAmountInlineKeyboard() tg.InlineKeyboardMarkup {

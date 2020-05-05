@@ -65,7 +65,11 @@ func (s Service) processCallback(ctx context.Context, bot *tg.BotAPI, update tg.
 		}
 		break
 	case kbDataPayment:
-		markup = paymentInlineKeyboard()
+		var err error
+		markup, err = paymentInlineKeyboard(ctx, s, uint64(messageId))
+		if err != nil {
+			return fmt.Errorf("failed to get payment inlint markup: %w", err)
+		}
 		break
 	case kbDataPaymentCard:
 		paymentMethod = types.PaymentMethodCard2Card
@@ -92,15 +96,11 @@ func (s Service) processCallback(ctx context.Context, bot *tg.BotAPI, update tg.
 		}
 		break
 	case kbDataFullPayment:
-		markup = startOrderInlineKeyboard()
-		order, err := s.OrderBook.GetOrderByMessageId(ctx, uint64(messageId))
-		if err != nil {
-			return fmt.Errorf("failed to get order: %w", err)
-		}
-		err = s.processPaymentCallback(ctx, bot, order, uint64(messageId), 0)
+		err := s.processPaymentCallback(ctx, bot, uint64(messageId), 0)
 		if err != nil {
 			return fmt.Errorf("failed to process full payment callback: %w", err)
 		}
+		markup = startOrderInlineKeyboard()
 		break
 	case kbDataPartialPayment:
 		markup = cancelInlineKeyboard()
@@ -186,7 +186,9 @@ func (s Service) processCallback(ctx context.Context, bot *tg.BotAPI, update tg.
 		}
 		markup = startOrderInlineKeyboard()
 	case kbDataDelivery:
-		err := s.processAddDeliveryCallback(ctx, bot, callbackQuery)
+		fallthrough
+	case kbDataLingerieSet:
+		err := s.processAddKnownItem(ctx, bot, callbackQuery, callbackData)
 		if err != nil {
 			return fmt.Errorf("failed to process add item callback: %w", err)
 		}

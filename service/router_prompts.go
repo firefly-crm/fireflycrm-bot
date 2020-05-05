@@ -142,7 +142,7 @@ func (s Service) processPrompt(ctx context.Context, bot *tg.BotAPI, update tg.Up
 			return fmt.Errorf("failed to parse amount: %w", err)
 		}
 
-		err = s.processPaymentCallback(ctx, bot, activeOrder, activeMessageId, uint32(amount*100))
+		err = s.processPaymentCallback(ctx, bot, activeMessageId, uint32(amount*100))
 		if err != nil {
 			return fmt.Errorf("failed to proces payment callback")
 		}

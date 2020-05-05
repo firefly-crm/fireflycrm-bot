@@ -52,14 +52,19 @@ func (s Service) processPartialPaymentCallback(ctx context.Context, bot *tg.BotA
 }
 
 //if amount is 0 then full payment
-func (s Service) processPaymentCallback(ctx context.Context, bot *tg.BotAPI, order types.Order, messageId uint64, amount uint32) error {
+func (s Service) processPaymentCallback(ctx context.Context, bot *tg.BotAPI, messageId uint64, amount uint32) error {
+	order, err := s.OrderBook.GetOrderByMessageId(ctx, messageId)
+	if err != nil {
+		return fmt.Errorf("failed to get order: %w", err)
+	}
+
 	if !order.ActivePaymentId.Valid {
 		return fmt.Errorf("active bill id is nil")
 	}
 
 	paymentId := uint64(order.ActivePaymentId.Int64)
 	if amount == 0 {
-		amount = order.Amount
+		amount = order.Amount - order.PayedAmount
 	}
 
 	defer func() {
@@ -68,7 +73,7 @@ func (s Service) processPaymentCallback(ctx context.Context, bot *tg.BotAPI, ord
 		}
 	}()
 
-	err := s.OrderBook.UpdatePaymentAmount(ctx, paymentId, amount)
+	err = s.OrderBook.UpdatePaymentAmount(ctx, paymentId, amount)
 	if err != nil {
 		return fmt.Errorf("failed to update payment amount: %w", err)
 	}
