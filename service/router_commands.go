@@ -17,6 +17,8 @@ func (s Service) processCommand(ctx context.Context, bot *tg.BotAPI, update tg.U
 		err = s.createOrder(ctx, bot, update)
 	} else if strings.HasPrefix(cmd, "/registerAsMerchant") {
 		err = s.registerMerchant(ctx, bot, update)
+	} else if cmd == kbActiveOrders {
+
 	} else {
 		err = s.processPrompt(ctx, bot, update)
 	}

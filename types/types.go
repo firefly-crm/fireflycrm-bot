@@ -24,6 +24,7 @@ const (
 	WaitingPaymentAmount
 	WaitingRefundAmount
 	Completed = 99
+	Deleted   = 100
 )
 
 type (
@@ -114,8 +115,8 @@ func (o Order) MessageString(c *Customer) string {
 *Сумма:* %.2f₽
 `, o.Id, createdAt, amount)
 
-	if o.Amount != 0 {
-		if o.PayedAmount == o.Amount {
+	if o.Amount != 0 && o.PayedAmount != 0 {
+		if o.PayedAmount >= o.Amount {
 			result += "*Оплачен:* полностью\n"
 		} else {
 			payedAmount := float32(o.PayedAmount) / 100.0
@@ -126,7 +127,7 @@ func (o Order) MessageString(c *Customer) string {
 	}
 
 	if o.RefundAmount != 0 {
-		if o.RefundAmount == o.Amount {
+		if o.RefundAmount >= o.Amount {
 			result += "*Возврат:* в полном объеме\n"
 		} else {
 			refundAmount := float32(o.RefundAmount) / 100.0

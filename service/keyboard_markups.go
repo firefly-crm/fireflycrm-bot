@@ -5,18 +5,61 @@ import (
 	"fmt"
 	"github.com/DarthRamone/fireflycrm-bot/types"
 	tg "github.com/go-telegram-bot-api/telegram-bot-api"
+	"sort"
 )
 
 func merchantStandByKeyboardMarkup() tg.ReplyKeyboardMarkup {
 	createOrderButton := tg.NewKeyboardButton(kbCreateOrder)
-	return tg.NewReplyKeyboard([]tg.KeyboardButton{createOrderButton})
+	getOrdersButton := tg.NewKeyboardButton(kbActiveOrders)
+	rows := [][]tg.KeyboardButton{
+		{createOrderButton},
+		{getOrdersButton},
+	}
+	return tg.NewReplyKeyboard(rows...)
 }
 
 func startOrderInlineKeyboard() tg.InlineKeyboardMarkup {
 	itemsButton := tg.NewInlineKeyboardButtonData(kbItems, kbDataItems)
 	customerButton := tg.NewInlineKeyboardButtonData(kbCustomer, kbDataCustomer)
 	paymentButton := tg.NewInlineKeyboardButtonData(kbPayment, kbDataPayment)
-	return tg.NewInlineKeyboardMarkup([]tg.InlineKeyboardButton{itemsButton, customerButton, paymentButton})
+	row1 := []tg.InlineKeyboardButton{
+		itemsButton,
+		customerButton,
+		paymentButton,
+	}
+	actionsButton := tg.NewInlineKeyboardButtonData(kbOrderActions, kbDataOrderActions)
+	row2 := []tg.InlineKeyboardButton{
+		actionsButton,
+	}
+
+	return tg.NewInlineKeyboardMarkup(row1, row2)
+}
+
+func orderActionsInlineKeyboard(ctx context.Context, s Service, messageId uint64) (tg.InlineKeyboardMarkup, error) {
+	var markup tg.InlineKeyboardMarkup
+	var rows [][]tg.InlineKeyboardButton
+
+	order, err := s.OrderBook.GetOrderByMessageId(ctx, messageId)
+	if err != nil {
+		return markup, fmt.Errorf("failed to get order for markup: %w", err)
+	}
+
+	if order.State == types.StandBy {
+		doneButton := tg.NewInlineKeyboardButtonData(kbOrderDone, kbDataOrderDone)
+		rows = append(rows, []tg.InlineKeyboardButton{doneButton})
+	}
+
+	if order.State == types.Completed {
+		restoreButton := tg.NewInlineKeyboardButtonData(kbOrderRestore, kbDataOrderRestore)
+		rows = append(rows, []tg.InlineKeyboardButton{restoreButton})
+	}
+
+	deleteButton := tg.NewInlineKeyboardButtonData(kbOrderDelete, kbDataOrderDelete)
+	rows = append(rows, []tg.InlineKeyboardButton{deleteButton})
+	backButton := tg.NewInlineKeyboardButtonData(kbBack, kbDataBack)
+	rows = append(rows, []tg.InlineKeyboardButton{backButton})
+
+	return tg.NewInlineKeyboardMarkup(rows...), nil
 }
 
 func orderItemsInlineKeyboard() tg.InlineKeyboardMarkup {
@@ -80,6 +123,8 @@ func paymentsListInlineKeyboard(ctx context.Context, s Service, messageId uint64
 	if err != nil {
 		return markup, fmt.Errorf("failed to get payments markup: %w", err)
 	}
+
+	sort.Sort(types.PaymentsByCreatedAt(order.Payments))
 
 	markups := make([][]tg.InlineKeyboardButton, 0)
 	for i, p := range order.Payments {

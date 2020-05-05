@@ -12,8 +12,8 @@ func (s Service) createUser(ctx context.Context, bot *tg.BotAPI, update tg.Updat
 	if err != nil {
 		return fmt.Errorf("failed to create user: %w", err)
 	}
-
 	msg := tg.NewMessage(update.Message.Chat.ID, replyWelcome)
+	msg.ReplyMarkup = merchantStandByKeyboardMarkup()
 	_, err = bot.Send(msg)
 	if err != nil {
 		return fmt.Errorf("failed to send welcome message: %w")

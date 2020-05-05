@@ -1,17 +1,17 @@
 package service
 
 var (
-	kbCreateOrder   = "Создать заказ"
-	kbItems         = "Позиции"
-	kbAddItem       = "Добавить"
-	kbRemove        = "Удалить"
-	kbEditItem      = "Редактировать"
-	kbQty           = "Кол-во"
-	kbPrice         = "Цена"
-	kbName          = "Имя"
-	kbCustomer      = "Клиент"
-	kbCustomerEmail = "Эл. почта"
-	//kbCustomerPhone  = "Телефон"
+	kbCreateOrder    = "Создать заказ"
+	kbActiveOrders   = "Активные заказы"
+	kbItems          = "Позиции"
+	kbAddItem        = "Добавить"
+	kbRemove         = "Удалить"
+	kbEditItem       = "Редактировать"
+	kbQty            = "Кол-во"
+	kbPrice          = "Цена"
+	kbName           = "Имя"
+	kbCustomer       = "Клиент"
+	kbCustomerEmail  = "Эл. почта"
 	kbBack           = "Назад"
 	kbCancel         = "Отмена"
 	kbPayment        = "Оплата"
@@ -23,6 +23,10 @@ var (
 	kbFullRefund     = "Полный возврат"
 	kbPartialRefund  = "Частичный возврат"
 	kbRefundPayment  = "Возврат"
+	kbOrderActions   = "Действия"
+	kbOrderDone      = "Завершить заказ"
+	kbOrderRestore   = "Возобновить заказ"
+	kbOrderDelete    = "Удалить заказ"
 )
 
 var (
@@ -43,6 +47,10 @@ var (
 	kbDataPartialRefund  = "partial_refund"
 	kbDataRemovePayment  = "order_remove_payment"
 	kbDataRefundPayment  = "order_refund_payment"
+	kbDataOrderActions   = "order_actions"
+	kbDataOrderDone      = "order_done"
+	kbDataOrderDelete    = "order_delete"
+	kbDataOrderRestore   = "order_restore"
 )
 
 var (

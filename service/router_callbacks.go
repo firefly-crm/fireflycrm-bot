@@ -22,6 +22,8 @@ func (s Service) processCallback(ctx context.Context, bot *tg.BotAPI, update tg.
 
 	logrus.Println(callbackData)
 
+	deleteOrderMessage := false
+
 	switch callbackData {
 	case kbDataItems:
 		markup = orderItemsInlineKeyboard()
@@ -129,6 +131,30 @@ func (s Service) processCallback(ctx context.Context, bot *tg.BotAPI, update tg.
 		if err != nil {
 			return fmt.Errorf("failed to get payments list markup: %w", err)
 		}
+	case kbDataOrderActions:
+		var err error
+		markup, err = orderActionsInlineKeyboard(ctx, s, uint64(messageId))
+		if err != nil {
+			return fmt.Errorf("failed to get order actions markup: %w", err)
+		}
+	case kbDataOrderDone:
+		err := s.processOrderStateCallback(ctx, bot, callbackQuery, types.Completed)
+		if err != nil {
+			return fmt.Errorf("failed to process order done callback: %w", err)
+		}
+		markup = startOrderInlineKeyboard()
+	case kbDataOrderRestore:
+		err := s.processOrderStateCallback(ctx, bot, callbackQuery, types.StandBy)
+		if err != nil {
+			return fmt.Errorf("failed to process order done callback: %w", err)
+		}
+		markup = startOrderInlineKeyboard()
+	case kbDataOrderDelete:
+		err := s.processOrderStateCallback(ctx, bot, callbackQuery, types.Completed)
+		if err != nil {
+			return fmt.Errorf("failed to process order done callback: %w", err)
+		}
+		deleteOrderMessage = true
 	default:
 		args := strings.Split(callbackData, "_")
 		entity := args[0]
@@ -227,11 +253,17 @@ func (s Service) processCallback(ctx context.Context, bot *tg.BotAPI, update tg.
 		}
 	}
 
-	edit := tg.NewEditMessageReplyMarkup(chatId, messageId, markup)
+	var msg tg.Chattable
 
-	_, err := bot.Send(edit)
+	if deleteOrderMessage {
+		msg = tg.NewDeleteMessage(chatId, messageId)
+	} else {
+		msg = tg.NewEditMessageReplyMarkup(chatId, messageId, markup)
+	}
+
+	_, err := bot.Send(msg)
 	if err != nil {
-		return fmt.Errorf("failed to update order message inline keyboard: %w", err)
+		return fmt.Errorf("failed to update order message: %w", err)
 	}
 
 	return nil
