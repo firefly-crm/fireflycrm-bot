@@ -16,7 +16,7 @@ type (
 		GetOrderByMessageId(ctx context.Context, messageId uint64) (order types.Order, err error)
 		UpdateHintMessageForOrder(ctx context.Context, orderId, messageId uint64) error
 		UpdateMessageForOrder(ctx context.Context, orderId, messageId uint64) error
-		UpdateOrderState(ctx context.Context, orderId uint64, state types.OrderState) error
+		UpdateOrderEditState(ctx context.Context, orderId uint64, state types.EditState) error
 		GetActiveOrderForUser(ctx context.Context, userId uint64) (types.Order, error)
 		GetActiveOrderMessageIdForUser(ctx context.Context, userId uint64) (uint64, error)
 		UpdateReceiptItemName(ctx context.Context, name string, userId, receiptItemId uint64) (err error)
@@ -33,6 +33,7 @@ type (
 		UpdatePaymentAmount(ctx context.Context, paymentId uint64, amount uint32) error
 		GetOrderMessage(ctx context.Context, messageId uint64) (types.OrderMessage, error)
 		UpdateOrderMessageDisplayMode(ctx context.Context, messageId uint64, mode types.DisplayMode) error
+		UpdateOrderState(ctx context.Context, id uint64, state types.OrderState) error
 	}
 
 	orderBook struct {

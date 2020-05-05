@@ -8,23 +8,28 @@ import (
 )
 
 const (
-	Acquiring PaymentMethod = iota
-	Card2Card
-	Cash
+	PaymentMethodAcquiring PaymentMethod = iota
+	PaymentMethodCard2Card
+	PaymentMethodCash
 )
 
 const (
-	StandBy OrderState = iota
-	WaitingItemName
-	WaitingItemPrice
-	WaitingItemQuantity
-	WaitingCustomerEmail
-	WaitingCustomerPhone
-	WaitingCustomerName
-	WaitingPaymentAmount
-	WaitingRefundAmount
-	Completed = 99
-	Deleted   = 100
+	EditStateNone EditState = iota
+	EditStateWaitingItemName
+	EditStateWaitingItemPrice
+	EditStateWaitingItemQuantity
+	EditStateWaitingCustomerEmail
+	EditStateWaitingCustomerPhone
+	EditStateWaitingCustomerName
+	EditStateWaitingPaymentAmount
+	EditStateWaitingRefundAmount
+)
+
+const (
+	OrderStateForming OrderState = iota
+	OrderStateInProgress
+	OrderStateDone
+	OrderStateDeleted = 99
 )
 
 const (
@@ -33,14 +38,17 @@ const (
 	DisplayModeDeleted
 )
 
+const (
+	ReceiptItemTypeGoods ReceiptItemType = iota
+	ReceiptItemTypeDelivery
+)
+
 type (
-	OrderState byte
-
+	OrderState      byte
+	EditState       byte
 	ReceiptItemType byte
-
-	PaymentMethod byte
-
-	DisplayMode byte
+	PaymentMethod   byte
+	DisplayMode     byte
 
 	OrderOptions struct {
 		Description    string
@@ -81,7 +89,8 @@ type (
 		Description     string        `db:"description"`
 		ActiveItemId    sql.NullInt64 `db:"active_item_id"`
 		ActivePaymentId sql.NullInt64 `db:"active_payment_id"`
-		State           OrderState    `db:"state"`
+		OrderState      OrderState    `db:"order_state"`
+		EditState       EditState     `db:"edit_state"`
 		Amount          uint32        `db:"amount"`
 		PayedAmount     uint32        `db:"payed_amount"`
 		RefundAmount    uint32        `db:"refund_amount"`
@@ -117,7 +126,7 @@ func (o Order) MessageString(c *Customer, mode DisplayMode) string {
 	case DisplayModeFull:
 		return o.getFullMessageString(c)
 	case DisplayModeCollapsed:
-		return "TODO: collapsed"
+		return o.getCollapsedMessageString()
 	case DisplayModeDeleted:
 		return o.getDeletedMessageString()
 	}
@@ -125,8 +134,26 @@ func (o Order) MessageString(c *Customer, mode DisplayMode) string {
 	return ""
 }
 
+func (o Order) getCollapsedMessageString() string {
+	loc, err := time.LoadLocation("Europe/Moscow")
+	if err != nil {
+		loc = time.Now().Location()
+	}
+	createdAt := o.CreatedAt.In(loc).Format("01.02.2006")
+
+	var payed string
+	if o.Amount <= o.PayedAmount {
+		payed = "Оплачен"
+	} else {
+		payed = fmt.Sprintf("Оплачено %d₽ из %d₽", o.PayedAmount/100, o.Amount/100)
+	}
+
+	orderState := o.OrderState.MessageString()
+	return fmt.Sprintf("*Заказ: #%d* от %s. %s. %s.", o.Id, createdAt, orderState, payed)
+}
+
 func (o Order) getDeletedMessageString() string {
-	return fmt.Sprintf("*Заказ #%d.* __Удалён__", o.Id)
+	return fmt.Sprintf("*Заказ #%d.* _Удалён_.", o.Id)
 }
 
 func (o Order) getFullMessageString(c *Customer) string {
@@ -140,10 +167,10 @@ func (o Order) getFullMessageString(c *Customer) string {
 	amount := float32(o.Amount) / 100.0
 
 	result := fmt.Sprintf(
-		`*Заказ #%d*
+		`*Заказ #%d* _(%s)_
 *Создан:* %s
 *Сумма:* %.2f₽
-`, o.Id, createdAt, amount)
+`, o.Id, o.OrderState.MessageString(), createdAt, amount)
 
 	if o.Amount != 0 && o.PayedAmount != 0 {
 		if o.PayedAmount >= o.Amount {
@@ -222,7 +249,7 @@ func (p Payment) MessageString(id int) string {
 	amount := float32(p.Amount) / 100.0
 	result += fmt.Sprintf("\n*Сумма:* %.2f₽", amount)
 
-	if p.PaymentMethod == Acquiring {
+	if p.PaymentMethod == PaymentMethodAcquiring {
 		createdAt := p.CreatedAt.In(loc).Format("02 Jan 2006 15:04")
 		result += fmt.Sprintf("\n*Создан:* %s", createdAt)
 
@@ -251,15 +278,29 @@ func (p Payment) MessageString(id int) string {
 
 func (p PaymentMethod) MessageString(link string) string {
 	switch p {
-	case Card2Card:
+	case PaymentMethodCard2Card:
 		return "Перевод на карту"
-	case Acquiring:
+	case PaymentMethodAcquiring:
 		return fmt.Sprintf("Оплата по [ссылке](%s)", link)
-	case Cash:
+	case PaymentMethodCash:
 		return "Оплата наличными"
 	default:
 		return "Неизвестный тип оплаты"
 	}
+}
+
+func (s OrderState) MessageString() string {
+	switch s {
+	case OrderStateForming:
+		return "Формируется"
+	case OrderStateDone:
+		return "Завершен"
+	case OrderStateDeleted:
+		return "Удалён"
+	case OrderStateInProgress:
+		return "В работе"
+	}
+	return "Статус неизвестен"
 }
 
 type PaymentsByCreatedAt []Payment

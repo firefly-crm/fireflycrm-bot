@@ -31,7 +31,7 @@ func (s Service) processItemEditQty(ctx context.Context, bot *tg.BotAPI, callbac
 		return fmt.Errorf("failed to update hint message: %w", err)
 	}
 
-	err = s.OrderBook.UpdateOrderState(ctx, order.Id, types.WaitingItemQuantity)
+	err = s.OrderBook.UpdateOrderEditState(ctx, order.Id, types.EditStateWaitingItemQuantity)
 	if err != nil {
 		return fmt.Errorf("failed to update order state: %w", err)
 	}
@@ -63,7 +63,7 @@ func (s Service) processItemEditPrice(ctx context.Context, bot *tg.BotAPI, callb
 		return fmt.Errorf("failed to update hint message: %w", err)
 	}
 
-	err = s.OrderBook.UpdateOrderState(ctx, order.Id, types.WaitingItemPrice)
+	err = s.OrderBook.UpdateOrderEditState(ctx, order.Id, types.EditStateWaitingItemPrice)
 	if err != nil {
 		return fmt.Errorf("failed to update order state: %w", err)
 	}
@@ -95,7 +95,7 @@ func (s Service) processItemEditName(ctx context.Context, bot *tg.BotAPI, callba
 		return fmt.Errorf("failed to update hint message: %w", err)
 	}
 
-	err = s.OrderBook.UpdateOrderState(ctx, order.Id, types.WaitingItemName)
+	err = s.OrderBook.UpdateOrderEditState(ctx, order.Id, types.EditStateWaitingItemName)
 	if err != nil {
 		return fmt.Errorf("failed to update order state: %w", err)
 	}

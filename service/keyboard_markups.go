@@ -18,6 +18,11 @@ func merchantStandByKeyboardMarkup() tg.ReplyKeyboardMarkup {
 	return tg.NewReplyKeyboard(rows...)
 }
 
+func expandOrderInlineKeyboard() tg.InlineKeyboardMarkup {
+	expandButton := tg.NewInlineKeyboardButtonData(kbOrderExpand, kbDataOrderExpand)
+	return tg.NewInlineKeyboardMarkup(tg.NewInlineKeyboardRow(expandButton))
+}
+
 func startOrderInlineKeyboard() tg.InlineKeyboardMarkup {
 	itemsButton := tg.NewInlineKeyboardButtonData(kbItems, kbDataItems)
 	customerButton := tg.NewInlineKeyboardButtonData(kbCustomer, kbDataCustomer)
@@ -49,14 +54,23 @@ func orderActionsInlineKeyboard(ctx context.Context, s Service, messageId uint64
 		return markup, fmt.Errorf("failed to get order for markup: %w", err)
 	}
 
-	if order.State == types.StandBy {
+	if order.OrderState == types.OrderStateForming {
+		doneButton := tg.NewInlineKeyboardButtonData(kbOrderDone, kbDataOrderDone)
+		inProgressButton := tg.NewInlineKeyboardButtonData(kbOrderInProgress, kbDataOrderInProgress)
+		rows = append(rows, []tg.InlineKeyboardButton{inProgressButton, doneButton})
+	}
+
+	if order.OrderState == types.OrderStateInProgress {
 		doneButton := tg.NewInlineKeyboardButtonData(kbOrderDone, kbDataOrderDone)
 		rows = append(rows, []tg.InlineKeyboardButton{doneButton})
 	}
 
-	if order.State == types.Completed {
-		restoreButton := tg.NewInlineKeyboardButtonData(kbOrderRestart, kbDataOrderRestart)
-		rows = append(rows, []tg.InlineKeyboardButton{restoreButton})
+	collapseButton := tg.NewInlineKeyboardButtonData(kbOrderCollapse, kbDataOrderCollapse)
+	rows = append(rows, []tg.InlineKeyboardButton{collapseButton})
+
+	if order.OrderState == types.OrderStateDone {
+		restartButton := tg.NewInlineKeyboardButtonData(kbOrderRestart, kbDataOrderRestart)
+		rows = append(rows, []tg.InlineKeyboardButton{restartButton})
 	}
 
 	deleteButton := tg.NewInlineKeyboardButtonData(kbOrderDelete, kbDataOrderDelete)
@@ -72,7 +86,8 @@ func orderItemsInlineKeyboard() tg.InlineKeyboardMarkup {
 	editItemButton := tg.NewInlineKeyboardButtonData(kbEditItem, kbDataEditItem)
 	removeItemButton := tg.NewInlineKeyboardButtonData(kbRemove, kbDataRemoveItem)
 	backButton := tg.NewInlineKeyboardButtonData(kbBack, kbDataBack)
-	row1 := []tg.InlineKeyboardButton{addItemButton, removeItemButton}
+	deliveryButton := tg.NewInlineKeyboardButtonData(kbDelivery, kbDataDelivery)
+	row1 := []tg.InlineKeyboardButton{addItemButton, deliveryButton, removeItemButton}
 	row2 := []tg.InlineKeyboardButton{editItemButton}
 	row3 := []tg.InlineKeyboardButton{backButton}
 	return tg.NewInlineKeyboardMarkup(row1, row2, row3)
@@ -133,7 +148,7 @@ func paymentsListInlineKeyboard(ctx context.Context, s Service, messageId uint64
 
 	markups := make([][]tg.InlineKeyboardButton, 0)
 	for i, p := range order.Payments {
-		if p.PaymentMethod == types.Acquiring && p.Payed {
+		if p.PaymentMethod == types.PaymentMethodAcquiring && p.Payed {
 			continue
 		}
 

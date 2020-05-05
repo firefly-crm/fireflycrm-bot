@@ -17,7 +17,7 @@ func (s Service) processCancelCallback(ctx context.Context, bot *tg.BotAPI, call
 		return fmt.Errorf("failed to get order: %w", err)
 	}
 
-	err = s.OrderBook.UpdateOrderState(ctx, order.Id, types.StandBy)
+	err = s.OrderBook.UpdateOrderEditState(ctx, order.Id, types.EditStateNone)
 	if err != nil {
 		return fmt.Errorf("failed to update order state: %w", err)
 	}

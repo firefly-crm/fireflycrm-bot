@@ -78,7 +78,7 @@ func (s Service) processPartialRefundCallback(ctx context.Context, bot *tg.BotAP
 		return fmt.Errorf("failed to update hint message: %w", err)
 	}
 
-	err = s.OrderBook.UpdateOrderState(ctx, order.Id, types.WaitingRefundAmount)
+	err = s.OrderBook.UpdateOrderEditState(ctx, order.Id, types.EditStateWaitingRefundAmount)
 	if err != nil {
 		return fmt.Errorf("failed to update order state: %w", err)
 	}

@@ -26,7 +26,7 @@ func (s Service) processCustomerEditEmail(ctx context.Context, bot *tg.BotAPI, c
 		return fmt.Errorf("failed to update hint message: %w", err)
 	}
 
-	err = s.OrderBook.UpdateOrderState(ctx, order.Id, types.WaitingCustomerEmail)
+	err = s.OrderBook.UpdateOrderEditState(ctx, order.Id, types.EditStateWaitingCustomerEmail)
 	if err != nil {
 		return fmt.Errorf("failed to update order state: %w", err)
 	}

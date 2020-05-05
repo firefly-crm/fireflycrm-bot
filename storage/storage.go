@@ -22,6 +22,7 @@ type (
 		GetActiveOrderForUser(ctx context.Context, userId uint64) (types.Order, error)
 		UpdateHintMessageForOrder(ctx context.Context, orderId, messageId uint64) error
 		AddOrderMessage(ctx context.Context, orderId, messageId uint64) error
+		UpdateOrderEditState(ctx context.Context, orderId uint64, state types.EditState) error
 		UpdateOrderState(ctx context.Context, orderId uint64, state types.OrderState) error
 		AddItemToOrder(ctx context.Context, orderId uint64) (receiptItemId uint64, err error)
 		RemoveReceiptItem(ctx context.Context, receiptItemId uint64) error
@@ -182,7 +183,7 @@ UPDATE orders SET active_payment_id=$2 WHERE id=$1
 
 	payed := false
 	var payedAt sql.NullTime
-	if method == types.Cash || method == types.Card2Card {
+	if method == types.PaymentMethodCash || method == types.PaymentMethodCard2Card {
 		payed = true
 		payedAt = sql.NullTime{
 			Time:  time.Now(),
@@ -421,8 +422,17 @@ func (s storage) AddItemToOrder(ctx context.Context, orderId uint64) (receiptIte
 	return
 }
 
+func (s storage) UpdateOrderEditState(ctx context.Context, orderId uint64, state types.EditState) error {
+	const updateQuery = `UPDATE orders SET edit_state=$1 WHERE id=$2`
+	_, err := s.db.Exec(updateQuery, state, orderId)
+	if err != nil {
+		return fmt.Errorf("failed to update order edit state: %w", err)
+	}
+	return nil
+}
+
 func (s storage) UpdateOrderState(ctx context.Context, orderId uint64, state types.OrderState) error {
-	const updateQuery = `UPDATE orders SET state=$1 WHERE id=$2`
+	const updateQuery = `UPDATE orders SET order_state=$1 WHERE id=$2`
 	_, err := s.db.Exec(updateQuery, state, orderId)
 	if err != nil {
 		return fmt.Errorf("failed to update order state: %w", err)

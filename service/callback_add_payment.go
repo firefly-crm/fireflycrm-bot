@@ -43,7 +43,7 @@ func (s Service) processPartialPaymentCallback(ctx context.Context, bot *tg.BotA
 		return fmt.Errorf("failed to update hint message: %w", err)
 	}
 
-	err = s.OrderBook.UpdateOrderState(ctx, order.Id, types.WaitingPaymentAmount)
+	err = s.OrderBook.UpdateOrderEditState(ctx, order.Id, types.EditStateWaitingPaymentAmount)
 	if err != nil {
 		return fmt.Errorf("failed to update order state: %w", err)
 	}

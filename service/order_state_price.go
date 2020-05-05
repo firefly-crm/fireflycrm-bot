@@ -8,7 +8,7 @@ import (
 )
 
 func (s Service) setWaitingForPrice(ctx context.Context, bot *tg.BotAPI, order types.Order) error {
-	err := s.OrderBook.UpdateOrderState(ctx, order.Id, types.WaitingItemPrice)
+	err := s.OrderBook.UpdateOrderEditState(ctx, order.Id, types.EditStateWaitingItemPrice)
 	if err != nil {
 		return fmt.Errorf("failed to change order state: %w", err)
 	}

@@ -35,7 +35,7 @@ func (s Service) processPrompt(ctx context.Context, bot *tg.BotAPI, update tg.Up
 		}
 
 		if standBy {
-			err = s.OrderBook.UpdateOrderState(ctx, activeOrder.Id, types.StandBy)
+			err = s.OrderBook.UpdateOrderEditState(ctx, activeOrder.Id, types.EditStateNone)
 			if err != nil {
 				logrus.Errorf("failed to set standby mode: %w", err)
 			}
@@ -55,8 +55,8 @@ func (s Service) processPrompt(ctx context.Context, bot *tg.BotAPI, update tg.Up
 
 	text := strings.TrimSpace(update.Message.Text)
 
-	switch activeOrder.State {
-	case types.WaitingItemName:
+	switch activeOrder.EditState {
+	case types.EditStateWaitingItemName:
 		if !activeOrder.ActiveItemId.Valid {
 			return fmt.Errorf("active order item id doesnt exists")
 		}
@@ -84,7 +84,7 @@ func (s Service) processPrompt(ctx context.Context, bot *tg.BotAPI, update tg.Up
 		}
 
 		break
-	case types.WaitingItemPrice:
+	case types.EditStateWaitingItemPrice:
 		if !activeOrder.ActiveItemId.Valid {
 			return fmt.Errorf("active order item id doesnt exists")
 		}
@@ -103,7 +103,7 @@ func (s Service) processPrompt(ctx context.Context, bot *tg.BotAPI, update tg.Up
 		}
 
 		break
-	case types.WaitingItemQuantity:
+	case types.EditStateWaitingItemQuantity:
 		if !activeOrder.ActiveItemId.Valid {
 			return fmt.Errorf("active order item id doesnt exists")
 		}
@@ -120,7 +120,7 @@ func (s Service) processPrompt(ctx context.Context, bot *tg.BotAPI, update tg.Up
 		}
 
 		break
-	case types.WaitingCustomerEmail:
+	case types.EditStateWaitingCustomerEmail:
 		err = checkmail.ValidateFormat(text)
 		if err != nil {
 			return fmt.Errorf("email validation failed: %w", err)
@@ -132,7 +132,7 @@ func (s Service) processPrompt(ctx context.Context, bot *tg.BotAPI, update tg.Up
 		}
 
 		break
-	case types.WaitingPaymentAmount:
+	case types.EditStateWaitingPaymentAmount:
 		if !activeOrder.ActivePaymentId.Valid {
 			return fmt.Errorf("active payment id doesnt exists")
 		}
@@ -148,7 +148,7 @@ func (s Service) processPrompt(ctx context.Context, bot *tg.BotAPI, update tg.Up
 		}
 
 		break
-	case types.WaitingRefundAmount:
+	case types.EditStateWaitingRefundAmount:
 		if !activeOrder.ActivePaymentId.Valid {
 			return fmt.Errorf("active payment id doesnt exists")
 		}

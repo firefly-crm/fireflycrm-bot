@@ -12,7 +12,8 @@ CREATE TABLE orders
     active_item_id    BIGINT      REFERENCES receipt_items ON DELETE SET NULL,
     active_payment_id BIGINT      REFERENCES payments ON DELETE SET NULL,
     hint_message_id   BIGINT,
-    state             SMALLINT    NOT NULL DEFAULT 0,
+    order_state       SMALLINT    NOT NULL DEFAULT 0,
+    edit_state        SMALLINT    NOT NULL DEFAULT 0,
     created_at        TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at        TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

@@ -68,7 +68,7 @@ func (s Service) processCallback(ctx context.Context, bot *tg.BotAPI, update tg.
 		markup = paymentInlineKeyboard()
 		break
 	case kbDataPaymentCard:
-		paymentMethod = types.Card2Card
+		paymentMethod = types.PaymentMethodCard2Card
 		markup = paymentAmountInlineKeyboard()
 		err := s.processAddPaymentCallback(ctx, callbackQuery, paymentMethod)
 		if err != nil {
@@ -76,7 +76,7 @@ func (s Service) processCallback(ctx context.Context, bot *tg.BotAPI, update tg.
 		}
 		break
 	case kbDataPaymentCash:
-		paymentMethod = types.Cash
+		paymentMethod = types.PaymentMethodCash
 		markup = paymentAmountInlineKeyboard()
 		err := s.processAddPaymentCallback(ctx, callbackQuery, paymentMethod)
 		if err != nil {
@@ -84,7 +84,7 @@ func (s Service) processCallback(ctx context.Context, bot *tg.BotAPI, update tg.
 		}
 		break
 	case kbDataPaymentLink:
-		paymentMethod = types.Acquiring
+		paymentMethod = types.PaymentMethodAcquiring
 		markup = paymentAmountInlineKeyboard()
 		err := s.processAddPaymentCallback(ctx, callbackQuery, paymentMethod)
 		if err != nil {
@@ -144,29 +144,54 @@ func (s Service) processCallback(ctx context.Context, bot *tg.BotAPI, update tg.
 			return fmt.Errorf("failed to get order actions markup: %w", err)
 		}
 	case kbDataOrderDone:
-		err := s.processOrderStateCallback(ctx, bot, callbackQuery, types.Completed)
+		err := s.processOrderStateCallback(ctx, bot, callbackQuery, types.OrderStateDone)
 		if err != nil {
 			return fmt.Errorf("failed to process order done callback: %w", err)
 		}
 		markup = startOrderInlineKeyboard()
 	case kbDataOrderRestart:
-		err := s.processOrderStateCallback(ctx, bot, callbackQuery, types.StandBy)
+		err := s.processOrderStateCallback(ctx, bot, callbackQuery, types.OrderStateForming)
 		if err != nil {
 			return fmt.Errorf("failed to process order restart callback: %w", err)
 		}
 		markup = startOrderInlineKeyboard()
 	case kbDataOrderDelete:
-		err := s.processOrderStateCallback(ctx, bot, callbackQuery, types.Deleted)
+		err := s.processOrderStateCallback(ctx, bot, callbackQuery, types.OrderStateDeleted)
 		if err != nil {
 			return fmt.Errorf("failed to process order delete callback: %w", err)
 		}
 		markup = restoreDeletedOrderInlineKeyboard()
 	case kbDataOrderRestore:
-		err := s.processOrderStateCallback(ctx, bot, callbackQuery, types.StandBy)
+		err := s.processOrderStateCallback(ctx, bot, callbackQuery, types.OrderStateForming)
 		if err != nil {
 			return fmt.Errorf("failed to process order restore callback: %w", err)
 		}
 		markup = startOrderInlineKeyboard()
+	case kbDataOrderInProgress:
+		err := s.processOrderStateCallback(ctx, bot, callbackQuery, types.OrderStateInProgress)
+		if err != nil {
+			return fmt.Errorf("failed to process order restore callback: %w", err)
+		}
+		markup = startOrderInlineKeyboard()
+	case kbDataOrderCollapse:
+		err := s.processOrderDisplayModeCallback(ctx, bot, callbackQuery, types.DisplayModeCollapsed)
+		if err != nil {
+			return fmt.Errorf("failed to process order collapse callback: %w", err)
+		}
+		markup = expandOrderInlineKeyboard()
+	case kbDataOrderExpand:
+		err := s.processOrderDisplayModeCallback(ctx, bot, callbackQuery, types.DisplayModeFull)
+		if err != nil {
+			return fmt.Errorf("failed to process order expand callback: %w", err)
+		}
+		markup = startOrderInlineKeyboard()
+	case kbDataDelivery:
+		err := s.processAddDeliveryCallback(ctx, bot, callbackQuery)
+		if err != nil {
+			return fmt.Errorf("failed to process add item callback: %w", err)
+		}
+		markup = cancelInlineKeyboard()
+
 	default:
 		args := strings.Split(callbackData, "_")
 		entity := args[0]

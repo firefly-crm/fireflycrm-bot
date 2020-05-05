@@ -7,6 +7,50 @@ import (
 	tg "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
+func (s Service) processAddDeliveryCallback(ctx context.Context, bot *tg.BotAPI, callbackQuery *tg.CallbackQuery) error {
+	chatId := callbackQuery.Message.Chat.ID
+	messageId := uint64(callbackQuery.Message.MessageID)
+
+	order, err := s.OrderBook.GetOrderByMessageId(ctx, messageId)
+	if err != nil {
+		return fmt.Errorf("failed to get order by message id: %w", err)
+	}
+
+	hintMessage := tg.NewMessage(chatId, replyEnterItemPrice)
+	hint, err := bot.Send(hintMessage)
+	if err != nil {
+		return fmt.Errorf("failed to send message: %w", err)
+	}
+
+	err = s.Users.SetActiveOrderMessageForUser(ctx, order.UserId, messageId)
+	if err != nil {
+		return fmt.Errorf("failed to set active order for user: %w", err)
+	}
+
+	var itemId uint64
+	itemId, err = s.OrderBook.AddItem(ctx, order.Id)
+	if err != nil {
+		return fmt.Errorf("failed to add item to order")
+	}
+
+	err = s.OrderBook.UpdateReceiptItemName(ctx, kbDelivery, uint64(chatId), itemId)
+	if err != nil {
+		return fmt.Errorf("failed to set delivery name: %w", err)
+	}
+
+	err = s.OrderBook.UpdateHintMessageForOrder(ctx, order.Id, uint64(hint.MessageID))
+	if err != nil {
+		return fmt.Errorf("failed to update hint message: %w", err)
+	}
+
+	err = s.OrderBook.UpdateOrderEditState(ctx, order.Id, types.EditStateWaitingItemPrice)
+	if err != nil {
+		return fmt.Errorf("failed to update order state: %w", err)
+	}
+
+	return nil
+}
+
 func (s Service) processAddItemCallack(ctx context.Context, bot *tg.BotAPI, callbackQuery *tg.CallbackQuery) error {
 	chatId := callbackQuery.Message.Chat.ID
 	messageId := uint64(callbackQuery.Message.MessageID)
@@ -36,7 +80,7 @@ func (s Service) processAddItemCallack(ctx context.Context, bot *tg.BotAPI, call
 		return fmt.Errorf("failed to update hint message: %w", err)
 	}
 
-	err = s.OrderBook.UpdateOrderState(ctx, order.Id, types.WaitingItemName)
+	err = s.OrderBook.UpdateOrderEditState(ctx, order.Id, types.EditStateWaitingItemName)
 	if err != nil {
 		return fmt.Errorf("failed to update order state: %w", err)
 	}
