@@ -1,14 +1,13 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"github.com/DarthRamone/fireflycrm-bot/billmaker"
+	"github.com/DarthRamone/fireflycrm-bot/infra"
 	"github.com/DarthRamone/fireflycrm-bot/orderbook"
 	"github.com/DarthRamone/fireflycrm-bot/service"
 	"github.com/DarthRamone/fireflycrm-bot/storage"
 	"github.com/DarthRamone/fireflycrm-bot/users"
-	"github.com/DarthRamone/modulbank-go"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"log"
@@ -27,9 +26,7 @@ func main() {
 		log.Fatalln(err)
 	}
 	stor := storage.NewStorage(db)
-	var mb modulbank.API
-
-	ob := orderbook.MustNewOrderBook(stor, mb)
+	ob := orderbook.MustNewOrderBook(stor)
 	bm := billmaker.NewBillMaker()
 	u := users.NewUsers(stor)
 
@@ -37,9 +34,9 @@ func main() {
 		OrderBook: ob,
 		BillMaker: bm,
 		Users:     u,
+		Storage:   stor,
 	}
 
-	ctx := context.Background()
-
-	serv.Serve(ctx, service.ServiceOptions{TelegramToken: *token})
+	ctx := infra.Context()
+	serv.Serve(ctx, service.Options{TelegramToken: *token})
 }

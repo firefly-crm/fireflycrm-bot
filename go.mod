@@ -2,8 +2,10 @@ module github.com/DarthRamone/fireflycrm-bot
 
 go 1.13
 
+replace github.com/DarthRamone/modulbank-go => ../modulbank-go
+
 require (
-	github.com/DarthRamone/modulbank-go v0.0.0-20200502112143-efe8ff56504a
+	github.com/DarthRamone/modulbank-go v0.0.3
 	github.com/badoux/checkmail v0.0.0-20181210160741-9661bd69e9ad
 	github.com/brianvoe/gofakeit v3.18.0+incompatible
 	github.com/go-telegram-bot-api/telegram-bot-api v4.6.4+incompatible

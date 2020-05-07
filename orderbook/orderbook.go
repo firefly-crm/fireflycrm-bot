@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/DarthRamone/fireflycrm-bot/storage"
 	"github.com/DarthRamone/fireflycrm-bot/types"
-	"github.com/DarthRamone/modulbank-go"
 )
 
 type (
@@ -35,29 +34,33 @@ type (
 		GetOrderMessage(ctx context.Context, messageId uint64) (types.OrderMessage, error)
 		UpdateOrderMessageDisplayMode(ctx context.Context, messageId uint64, mode types.DisplayMode) error
 		UpdateOrderState(ctx context.Context, id uint64, state types.OrderState) error
+		GetPayment(ctx context.Context, paymentId uint64) (types.Payment, error)
+		GetBankPayments(ctx context.Context) (payments []types.Payment, err error)
 	}
 
 	orderBook struct {
-		storage   storage.Storage
-		modulBank modulbank.API
+		storage storage.Storage
 	}
 )
+
+func (ob orderBook) GetPayment(ctx context.Context, paymentId uint64) (types.Payment, error) {
+	return ob.storage.GetPayment(ctx, paymentId)
+}
 
 func (ob orderBook) GetActiveOrderMessageIdForUser(ctx context.Context, userId uint64) (uint64, error) {
 	return ob.storage.GetActiveOrderMessageIdForUser(ctx, userId)
 }
 
 //Returns new instance of bill maker
-func NewOrderBook(storage storage.Storage, modulBank modulbank.API) (OrderBook, error) {
+func NewOrderBook(storage storage.Storage) (OrderBook, error) {
 	return orderBook{
-		storage:   storage,
-		modulBank: modulBank,
+		storage: storage,
 	}, nil
 }
 
 //Returns new instance of bill maker
-func MustNewOrderBook(storage storage.Storage, modulBank modulbank.API) OrderBook {
-	bm, err := NewOrderBook(storage, modulBank)
+func MustNewOrderBook(storage storage.Storage) OrderBook {
+	bm, err := NewOrderBook(storage)
 	if err != nil {
 		panic(err)
 	}
@@ -122,4 +125,8 @@ func (ob orderBook) UpdatePaymentAmount(ctx context.Context, paymentId uint64, a
 
 func (ob orderBook) RefundPayment(ctx context.Context, paymentId uint64, amount uint32) error {
 	return ob.storage.RefundPayment(ctx, paymentId, amount)
+}
+
+func (ob orderBook) GetBankPayments(ctx context.Context) (payments []types.Payment, err error) {
+	return ob.storage.GetBankPayments(ctx)
 }

@@ -13,37 +13,35 @@ CREATE UNIQUE INDEX name_idx ON items (user_id, name);
 
 CREATE TABLE receipt_items
 (
-    id          BIGSERIAL PRIMARY KEY,
-    name        TEXT                  NOT NULL DEFAULT '',
-    item_id     INT REFERENCES items,
-    order_id    INT REFERENCES orders NOT NULL,
-    quantity    INT                   NOT NULL DEFAULT 1,
-    price       INT                   NOT NULL DEFAULT 0,
-    initialised BOOLEAN               NOT NULL DEFAULT FALSE,
-    created_at  TIMESTAMPTZ           NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at  TIMESTAMPTZ           NOT NULL DEFAULT CURRENT_TIMESTAMP
+    id           BIGSERIAL PRIMARY KEY,
+    name         TEXT                  NOT NULL DEFAULT '',
+    item_id      INT REFERENCES items,
+    order_id     INT REFERENCES orders NOT NULL,
+    quantity     INT                   NOT NULL DEFAULT 1,
+    price        INT                   NOT NULL DEFAULT 0,
+    payed_amount INT                   NOT NULL DEFAULT 0,
+    initialised  BOOLEAN               NOT NULL DEFAULT FALSE,
+    created_at   TIMESTAMPTZ           NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at   TIMESTAMPTZ           NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX ord_idx ON receipt_items (order_id);
 
 
-CREATE OR REPLACE FUNCTION update_order_amount() RETURNS TRIGGER AS $update_order_amount$
+CREATE OR REPLACE FUNCTION update_order_amount() RETURNS TRIGGER AS
+$update_order_amount$
 BEGIN
-    IF (TG_OP='DELETE') THEN
+    IF (TG_OP = 'DELETE') THEN
         UPDATE
             orders
-        SET
-            amount=COALESCE((SELECT SUM(price * quantity) FROM receipt_items WHERE order_id=OLD.order_id), 0)
-        WHERE
-                id=OLD.order_id;
+        SET amount=COALESCE((SELECT SUM(price * quantity) FROM receipt_items WHERE order_id = OLD.order_id), 0)
+        WHERE id = OLD.order_id;
 
         RETURN OLD;
     ELSE
         UPDATE
             orders
-        SET
-            amount=COALESCE((SELECT SUM(price * quantity) FROM receipt_items WHERE order_id=NEW.order_id), 0)
-        WHERE
-                id=NEW.order_id;
+        SET amount=COALESCE((SELECT SUM(price * quantity) FROM receipt_items WHERE order_id = NEW.order_id), 0)
+        WHERE id = NEW.order_id;
 
         RETURN NEW;
     END IF;
@@ -53,8 +51,10 @@ END;
 $update_order_amount$ LANGUAGE plpgsql;
 
 CREATE TRIGGER update_order_amount
-    AFTER INSERT OR UPDATE OR DELETE ON receipt_items
-    FOR EACH ROW EXECUTE PROCEDURE update_order_amount();
+    AFTER INSERT OR UPDATE OR DELETE
+    ON receipt_items
+    FOR EACH ROW
+EXECUTE PROCEDURE update_order_amount();
 -- +goose StatementEnd
 
 -- +goose Down

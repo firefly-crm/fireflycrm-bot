@@ -15,10 +15,10 @@ func (s Service) processCallback(ctx context.Context, bot *tg.BotAPI, update tg.
 	chatId := callbackQuery.Message.Chat.ID
 	messageId := uint64(callbackQuery.Message.MessageID)
 
-	var paymentMethod types.PaymentMethod
-
 	var markup tg.InlineKeyboardMarkup
 	callbackData := callbackQuery.Data
+
+	shouldDelete := false
 
 	logrus.Println(callbackData)
 
@@ -80,27 +80,36 @@ func (s Service) processCallback(ctx context.Context, bot *tg.BotAPI, update tg.
 		}
 		break
 	case kbDataPaymentCard:
-		paymentMethod = types.PaymentMethodCard2Card
-		markup = paymentAmountInlineKeyboard()
-		err := s.processAddPaymentCallback(ctx, callbackQuery, paymentMethod)
+		var err error
+		err = s.processAddPaymentCallback(ctx, callbackQuery, types.PaymentMethodCard2Card)
 		if err != nil {
 			return fmt.Errorf("failed to add card payment to order: %w", err)
 		}
+		markup, err = paymentAmountInlineKeyboard(ctx, s, messageId)
+		if err != nil {
+			return fmt.Errorf("faield to get payment amount inline markup: %w", err)
+		}
 		break
 	case kbDataPaymentCash:
-		paymentMethod = types.PaymentMethodCash
-		markup = paymentAmountInlineKeyboard()
-		err := s.processAddPaymentCallback(ctx, callbackQuery, paymentMethod)
+		var err error
+		err = s.processAddPaymentCallback(ctx, callbackQuery, types.PaymentMethodCash)
 		if err != nil {
 			return fmt.Errorf("failed to add cash payment to order: %w", err)
 		}
+		markup, err = paymentAmountInlineKeyboard(ctx, s, messageId)
+		if err != nil {
+			return fmt.Errorf("faield to get payment amount inline markup: %w", err)
+		}
 		break
 	case kbDataPaymentLink:
-		paymentMethod = types.PaymentMethodAcquiring
-		markup = paymentAmountInlineKeyboard()
-		err := s.processAddPaymentCallback(ctx, callbackQuery, paymentMethod)
+		var err error
+		err = s.processAddPaymentCallback(ctx, callbackQuery, types.PaymentMethodAcquiring)
 		if err != nil {
 			return fmt.Errorf("failed to add link payment to order: %w", err)
+		}
+		markup, err = paymentAmountInlineKeyboard(ctx, s, messageId)
+		if err != nil {
+			return fmt.Errorf("faield to get payment amount inline markup: %w", err)
 		}
 		break
 	case kbDataFullPayment:
@@ -222,7 +231,8 @@ func (s Service) processCallback(ctx context.Context, bot *tg.BotAPI, update tg.
 			return fmt.Errorf("failed to process add item callback: %w", err)
 		}
 		markup = cancelInlineKeyboard()
-
+	case kbDataNotifyRead:
+		shouldDelete = true
 	default:
 		args := strings.Split(callbackData, "_")
 		entity := args[0]
@@ -236,13 +246,19 @@ func (s Service) processCallback(ctx context.Context, bot *tg.BotAPI, update tg.
 				markup = cancelInlineKeyboard()
 				err := s.processCustomerEditEmail(ctx, bot, callbackQuery)
 				if err != nil {
-					return fmt.Errorf("failed to process item edit name callback: %w", err)
+					return fmt.Errorf("failed to process customer edit name callback: %w", err)
 				}
-			case "instagram":
+			case kbDataInstagram:
 				markup = cancelInlineKeyboard()
 				err := s.processCustomerEditInstagram(ctx, bot, callbackQuery)
 				if err != nil {
-					return fmt.Errorf("failed to process item edit instagram callback: %w", err)
+					return fmt.Errorf("failed to process customer edit instagram callback: %w", err)
+				}
+			case "phone":
+				markup = cancelInlineKeyboard()
+				err := s.processCustomerEditPhone(ctx, bot, callbackQuery)
+				if err != nil {
+					return fmt.Errorf("faield to process customer edit phone callback: %w", err)
 				}
 			}
 		}
@@ -328,11 +344,15 @@ func (s Service) processCallback(ctx context.Context, bot *tg.BotAPI, update tg.
 		}
 	}
 
-	msg := tg.NewEditMessageReplyMarkup(chatId, int(messageId), markup)
-
+	var msg tg.Chattable
+	if !shouldDelete {
+		msg = tg.NewEditMessageReplyMarkup(chatId, int(messageId), markup)
+	} else {
+		msg = tg.NewDeleteMessage(chatId, int(messageId))
+	}
 	_, err := bot.Send(msg)
 	if err != nil {
-		return fmt.Errorf("failed to update order message: %w", err)
+		return fmt.Errorf("failed to send message: %w", err)
 	}
 
 	return nil

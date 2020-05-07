@@ -36,13 +36,20 @@ type (
 		AddPayment(ctx context.Context, orderId uint64, method types.PaymentMethod) (uint64, error)
 		RemovePayment(ctx context.Context, paymentId uint64) error
 		UpdatePaymentAmount(ctx context.Context, paymentId uint64, amount uint32) error
-		UpdatePaymentLink(ctx context.Context, paymentId uint64, url string) error
+		UpdatePaymentLink(ctx context.Context, paymentId uint64, url, bankPaymentId string) error
 		RefundPayment(ctx context.Context, paymentId uint64, amount uint32) error
+		GetPayment(ctx context.Context, paymentId uint64) (types.Payment, error)
 		SetActivePaymentId(ctx context.Context, orderId, paymentId uint64) error
 		GetActiveOrderMessageIdForUser(ctx context.Context, userId uint64) (uint64, error)
 		GetOrderMessage(ctx context.Context, messageId uint64) (types.OrderMessage, error)
 		UpdateOrderMessageDisplayMode(ctx context.Context, messageId uint64, mode types.DisplayMode) error
 		UpdateCustomerInstagram(ctx context.Context, instagram string, orderId uint64) (uint64, error)
+		UpdateCustomerPhone(ctx context.Context, phone string, orderId uint64) (uint64, error)
+		GetUser(ctx context.Context, userId uint64) (user types.User, err error)
+		GetBankPayments(ctx context.Context) (payments []types.Payment, err error)
+		SetPaymentPaid(ctx context.Context, paymentId uint64) error
+		SetPaymentExpired(ctx context.Context, paymentId uint64) error
+		GetMessagesForOrder(ctx context.Context, orderId uint64) ([]types.OrderMessage, error)
 	}
 
 	storage struct {
@@ -53,6 +60,82 @@ type (
 var (
 	ErrNoSuchUser = errors.New("no such user")
 )
+
+func (s storage) GetMessagesForOrder(ctx context.Context, orderId uint64) (messages []types.OrderMessage, err error) {
+	const getQuery = `SELECT * FROM order_messages WHERE order_id=$1`
+	err = s.db.Select(&messages, getQuery, orderId)
+	if err != nil {
+		return messages, fmt.Errorf("failed to get messages: %w", err)
+	}
+	return
+}
+
+func (s storage) SetPaymentPaid(ctx context.Context, paymentId uint64) error {
+	const updateRequest = `
+UPDATE payments
+SET
+	payed=TRUE,
+	payed_at=CURRENT_TIMESTAMP
+WHERE
+	id=$1`
+	_, err := s.db.Exec(updateRequest, paymentId)
+	if err != nil {
+		return fmt.Errorf("failed to set payment paid: %w", err)
+	}
+	return nil
+}
+
+func (s storage) SetPaymentExpired(ctx context.Context, paymentId uint64) error {
+	const updateRequest = `
+UPDATE payments
+SET
+	expired=TRUE
+WHERE
+	id=$1`
+	_, err := s.db.Exec(updateRequest, paymentId)
+	if err != nil {
+		return fmt.Errorf("failed to set payment expired: %w", err)
+	}
+	return nil
+}
+
+func (s storage) GetBankPayments(ctx context.Context) (payments []types.Payment, err error) {
+	const getQuery = `
+SELECT 
+	* 
+FROM
+	payments
+WHERE
+	payment_method=0
+AND
+	NOT expired
+AND
+	NOT payed`
+
+	err = s.db.Select(&payments, getQuery)
+	if err != nil {
+		return payments, fmt.Errorf("failed to get payments: %w", err)
+	}
+	return
+}
+
+func (s storage) GetUser(ctx context.Context, userId uint64) (user types.User, err error) {
+	const getUserQuery = `SELECT * FROM users WHERE id=$1`
+	err = s.db.Get(&user, getUserQuery, userId)
+	if err != nil {
+		return user, fmt.Errorf("failed to get user: %w", err)
+	}
+	return
+}
+
+func (s storage) GetPayment(ctx context.Context, paymentId uint64) (payment types.Payment, err error) {
+	const getQuery = `SELECT * FROM payments WHERE id=$1`
+	err = s.db.Get(&payment, getQuery, paymentId)
+	if err != nil {
+		return payment, fmt.Errorf("failed to get payment: %w", err)
+	}
+	return payment, nil
+}
 
 func (s storage) UpdateCustomerInstagram(ctx context.Context, instagram string, orderId uint64) (customerId uint64, err error) {
 	const createOrGetCustomerQuery = `
@@ -84,6 +167,41 @@ UPDATE orders SET customer_id=$2 WHERE id=$1
 	_, err = tx.Exec(updateCustomerIdQuery, orderId, customerId)
 	if err != nil {
 		return customerId, fmt.Errorf("failed to update customer instagram: %w", err)
+	}
+
+	return customerId, nil
+}
+
+func (s storage) UpdateCustomerPhone(ctx context.Context, phone string, orderId uint64) (customerId uint64, err error) {
+	const createOrGetCustomerQuery = `
+INSERT INTO customers(phone) VALUES($1)
+ON CONFLICT(phone) DO UPDATE SET phone=$1
+RETURNING id
+`
+	const updateCustomerIdQuery = `
+UPDATE orders SET customer_id=$2 WHERE id=$1
+`
+
+	tx, err := s.db.BeginTxx(ctx, nil)
+	if err != nil {
+		return customerId, fmt.Errorf("failed to start transaction: %w", err)
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback()
+		} else {
+			_ = tx.Commit()
+		}
+	}()
+
+	err = tx.Get(&customerId, createOrGetCustomerQuery, phone)
+	if err != nil {
+		return customerId, fmt.Errorf("failed to update customer phone: %w", err)
+	}
+
+	_, err = tx.Exec(updateCustomerIdQuery, orderId, customerId)
+	if err != nil {
+		return customerId, fmt.Errorf("failed to update customer phone: %w", err)
 	}
 
 	return customerId, nil
@@ -158,9 +276,9 @@ func (s storage) SetActivePaymentId(ctx context.Context, orderId, paymentId uint
 	return nil
 }
 
-func (s storage) UpdatePaymentLink(ctx context.Context, paymentId uint64, url string) error {
-	const updateLinkQuery = `UPDATE payments SET payment_link=$2 WHERE id=$1`
-	_, err := s.db.Exec(updateLinkQuery, paymentId, url)
+func (s storage) UpdatePaymentLink(ctx context.Context, paymentId uint64, url, bankPaymentId string) error {
+	const updateLinkQuery = `UPDATE payments SET payment_link=$2,bank_payment_id=$3 WHERE id=$1`
+	_, err := s.db.Exec(updateLinkQuery, paymentId, url, bankPaymentId)
 	if err != nil {
 		return fmt.Errorf("failed to update payment link: %w", err)
 	}
@@ -335,8 +453,6 @@ func (s storage) GetOrder(ctx context.Context, orderId uint64) (order types.Orde
 	if err != nil {
 		return order, fmt.Errorf("failed to get payments: %w", err)
 	}
-
-	fmt.Printf("order(%d) payments len: %d\n", orderId, len(order.Payments))
 
 	return
 }

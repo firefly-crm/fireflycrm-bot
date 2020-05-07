@@ -7,6 +7,7 @@ import (
 	"github.com/badoux/checkmail"
 	tg "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/sirupsen/logrus"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -91,7 +92,7 @@ func (s Service) processPrompt(ctx context.Context, bot *tg.BotAPI, update tg.Up
 
 		text = strings.Trim(text, "₽р$РP")
 
-		price, err := strconv.Atoi(text)
+		price, err := parseAmount(text)
 		if err != nil {
 			return fmt.Errorf("failed to parse int: %w", err)
 		}
@@ -108,7 +109,7 @@ func (s Service) processPrompt(ctx context.Context, bot *tg.BotAPI, update tg.Up
 			return fmt.Errorf("active order item id doesnt exists")
 		}
 
-		qty, err := strconv.Atoi(text)
+		qty, err := parseAmount(text)
 		if err != nil {
 			return fmt.Errorf("failed to parse int: %w", err)
 		}
@@ -137,7 +138,7 @@ func (s Service) processPrompt(ctx context.Context, bot *tg.BotAPI, update tg.Up
 			return fmt.Errorf("active payment id doesnt exists")
 		}
 
-		amount, err := strconv.Atoi(text)
+		amount, err := parseAmount(text)
 		if err != nil {
 			return fmt.Errorf("failed to parse amount: %w", err)
 		}
@@ -153,7 +154,7 @@ func (s Service) processPrompt(ctx context.Context, bot *tg.BotAPI, update tg.Up
 			return fmt.Errorf("active payment id doesnt exists")
 		}
 
-		amount, err := strconv.Atoi(text)
+		amount, err := parseAmount(text)
 		if err != nil {
 			return fmt.Errorf("failed to parse amount: %w", err)
 		}
@@ -173,7 +174,61 @@ func (s Service) processPrompt(ctx context.Context, bot *tg.BotAPI, update tg.Up
 		}
 
 		break
+	case types.EditStateWaitingCustomerPhone:
+		text = strings.Trim(text, "+")
+
+		phone, err := parsePhone(text)
+		if err != nil {
+			return fmt.Errorf("failed to parse phone number: %w", err)
+		}
+
+		_, err = s.Storage.UpdateCustomerPhone(ctx, phone, activeOrder.Id)
+		if err != nil {
+			return fmt.Errorf("failed to update customer phone: %w", err)
+		}
+
+		break
 	}
 
 	return nil
+}
+
+func parseAmount(text string) (int, error) {
+	reg, err := regexp.Compile("[^0-9]+")
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse text: %w", err)
+	}
+	numericStr := reg.ReplaceAllString(text, "")
+	res, err := strconv.ParseInt(numericStr, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse")
+	}
+	return int(res), nil
+}
+
+func parsePhone(text string) (string, error) {
+	reg, err := regexp.Compile("[^0-9]+")
+	if err != nil {
+		return "", fmt.Errorf("failed to parse text: %w", err)
+	}
+	numericStr := reg.ReplaceAllString(text, "")
+
+	if len(numericStr) == 10 {
+		numericStr = "7" + numericStr
+	}
+
+	if numericStr[0] == '8' {
+		numericStr = "7" + numericStr[1:]
+	}
+
+	digits := strings.Split(numericStr, "")
+
+	phone := fmt.Sprintf("+%s(%s)%s-%s-%s",
+		digits[0],
+		strings.Join(digits[1:4], ""),
+		strings.Join(digits[4:7], ""),
+		strings.Join(digits[7:9], ""),
+		strings.Join(digits[9:], ""))
+
+	return phone, nil
 }

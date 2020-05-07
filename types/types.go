@@ -20,6 +20,7 @@ const (
 	EditStateWaitingItemQuantity
 	EditStateWaitingCustomerEmail
 	EditStateWaitingCustomerInstagram
+	EditStateWaitingCustomerPhone
 	EditStateWaitingPaymentAmount
 	EditStateWaitingRefundAmount
 )
@@ -105,9 +106,11 @@ type (
 		Amount        uint32        `db:"amount"`
 		PaymentMethod PaymentMethod `db:"payment_method"`
 		PaymentLink   string        `db:"payment_link"`
+		BankPaymentId string        `db:"bank_payment_id"`
 		Payed         bool          `db:"payed"`
 		Refunded      bool          `db:"refunded"`
 		RefundAmount  uint32        `db:"refund_amount"`
+		Expired       bool          `db:"expired"`
 		CreatedAt     time.Time     `db:"created_at"`
 		UpdatedAt     time.Time     `db:"updated_at"`
 		PayedAt       sql.NullTime  `db:"payed_at"`
@@ -117,6 +120,15 @@ type (
 		Id          uint64      `db:"id"`
 		OrderId     uint64      `db:"order_id"`
 		DisplayMode DisplayMode `db:"display_mode"`
+	}
+
+	User struct {
+		Id                   uint64 `db:"id"`
+		IsMerchant           bool   `db:"is_merchant"`
+		ActiveOrderId        uint64 `db:"active_order_id"`
+		MerchantId           string `db:"merchant_id"`
+		SecretKey            string `db:"secret_key"`
+		ActiveOrderMessageId string `db:"active_order_msg_id"`
 	}
 )
 

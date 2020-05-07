@@ -42,7 +42,7 @@ func (s Service) processRefundCallback(ctx context.Context, bot *tg.BotAPI, orde
 
 	defer func() {
 		if err := s.deleteHint(ctx, bot, order); err != nil {
-			logrus.Error("failed to delete hint: %v", err)
+			logrus.Error("failed to delete hint: %v", err.Error())
 		}
 	}()
 

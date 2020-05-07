@@ -14,6 +14,7 @@ var (
 	kbCustomer             = "Клиент"
 	kbCustomerEmail        = "Эл. почта"
 	kbCustomerInstagram    = "Instagram"
+	kbCustomerPhone        = "Телефон"
 	kbBack                 = "Назад"
 	kbCancel               = "Отмена"
 	kbPayment              = "Оплата"
@@ -34,6 +35,7 @@ var (
 	kbOrderCollapse        = "Свернуть"
 	kbOrderExpand          = "Развернуть"
 	kbDelivery             = "Доставка"
+	kbOk                   = "OK"
 	kbLingerieSetPictogram = "👙"
 	kbDeliveryPictogram    = "🚚"
 )
@@ -67,6 +69,7 @@ var (
 	kbDataDelivery        = "delivery"
 	kbDataLingerieSet     = "lingerie"
 	kbDataInstagram       = "instagram"
+	kbDataNotifyRead      = "notify_readed"
 )
 
 var (
@@ -77,5 +80,6 @@ var (
 	replyEnterItemQty                 = "Введите количество"
 	replyEnterCustomerEmail           = "Введите адрес эл. почты"
 	replyEnterCustomerInstagram       = "Введите имя пользователя"
+	replyEnterCustomerPhone           = "Введите номер телефона"
 	replyEnterAmount                  = "Введите сумму"
 )

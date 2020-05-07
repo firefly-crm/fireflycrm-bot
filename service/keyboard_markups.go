@@ -37,7 +37,12 @@ func startOrderInlineKeyboard(ctx context.Context, s Service, messageId uint64) 
 	itemsButton := tg.NewInlineKeyboardButtonData(kbItems, kbDataItems)
 
 	if order.OrderState != types.OrderStateDone {
-		row1 := []tg.InlineKeyboardButton{itemsButton, customerButton, paymentButton}
+		var row1 []tg.InlineKeyboardButton
+		if !order.CustomerId.Valid {
+			row1 = []tg.InlineKeyboardButton{itemsButton, customerButton}
+		} else {
+			row1 = []tg.InlineKeyboardButton{itemsButton, customerButton, paymentButton}
+		}
 		row2 := []tg.InlineKeyboardButton{actionsButton}
 		markup = tg.NewInlineKeyboardMarkup(row1, row2)
 	} else {
@@ -118,14 +123,14 @@ func customerInlineKeyboard(ctx context.Context, s Service, messageId uint64) (t
 	//nameButton := tg.NewInlineKeyboardButtonData(kbName, fmt.Sprintf("customer_edit_name_%d", order.Id))
 	emailButton := tg.NewInlineKeyboardButtonData(kbCustomerEmail, fmt.Sprintf("customer_edit_email_%d", order.Id))
 	instaButton := tg.NewInlineKeyboardButtonData(kbCustomerInstagram, fmt.Sprintf("customer_edit_instagram_%d", order.Id))
-	//phoneButton := tg.NewInlineKeyboardButtonData(kbCustomerPhone, fmt.Sprintf("customer_edit_phone_%d", order.Id))
+	phoneButton := tg.NewInlineKeyboardButtonData(kbCustomerPhone, fmt.Sprintf("customer_edit_phone_%d", order.Id))
 	backButton := tg.NewInlineKeyboardButtonData(kbBack, kbDataBack)
 
 	markups := [][]tg.InlineKeyboardButton{
 		//{nameButton},
 		{instaButton},
 		{emailButton},
-		//{phoneButton},
+		{phoneButton},
 		{backButton},
 	}
 
@@ -210,6 +215,11 @@ func paymentInlineKeyboard(ctx context.Context, s Service, messageId uint64) (tg
 		return markup, fmt.Errorf("failed to get payments markup: %w", err)
 	}
 
+	customer, err := s.Users.GetCustomer(ctx, uint64(order.CustomerId.Int64))
+	if err != nil {
+		return markup, fmt.Errorf("failed to get customer: %w", err)
+	}
+
 	linkButton := tg.NewInlineKeyboardButtonData(kbPaymentLink, kbDataPaymentLink)
 	cardButton := tg.NewInlineKeyboardButtonData(kbPaymentCard, kbDataPaymentCard)
 	cashButton := tg.NewInlineKeyboardButtonData(kbPaymentCash, kbDataPaymentCash)
@@ -231,7 +241,12 @@ func paymentInlineKeyboard(ctx context.Context, s Service, messageId uint64) (tg
 		row2 := []tg.InlineKeyboardButton{cancelButton}
 		markup = tg.NewInlineKeyboardMarkup(row1, row2)
 	} else {
-		row1 := []tg.InlineKeyboardButton{linkButton, cardButton, cashButton}
+		var row1 []tg.InlineKeyboardButton
+		if order.PayedAmount == 0 && customer.Email.Valid {
+			row1 = []tg.InlineKeyboardButton{linkButton, cardButton, cashButton}
+		} else {
+			row1 = []tg.InlineKeyboardButton{cardButton, cashButton}
+		}
 		row2 := []tg.InlineKeyboardButton{deleteButton, refundButton}
 		row3 := []tg.InlineKeyboardButton{cancelButton}
 		markup = tg.NewInlineKeyboardMarkup(row1, row2, row3)
@@ -240,17 +255,43 @@ func paymentInlineKeyboard(ctx context.Context, s Service, messageId uint64) (tg
 	return markup, nil
 }
 
-func paymentAmountInlineKeyboard() tg.InlineKeyboardMarkup {
+func notifyReadInlineKeyboard() tg.InlineKeyboardMarkup {
+	okButton := tg.NewInlineKeyboardButtonData(kbOk, kbDataNotifyRead)
+	return tg.NewInlineKeyboardMarkup(tg.NewInlineKeyboardRow(okButton))
+}
+
+func paymentAmountInlineKeyboard(ctx context.Context, s Service, messageId uint64) (tg.InlineKeyboardMarkup, error) {
+	var markup tg.InlineKeyboardMarkup
+
+	order, err := s.OrderBook.GetOrderByMessageId(ctx, messageId)
+	if err != nil {
+		return markup, fmt.Errorf("failed to get payments markup: %w", err)
+	}
+
+	payment, err := s.OrderBook.GetPayment(ctx, uint64(order.ActivePaymentId.Int64))
+	if err != nil {
+		return markup, fmt.Errorf("failed to get payment: %w", err)
+	}
+
 	fullButton := tg.NewInlineKeyboardButtonData(kbFullPayment, kbDataFullPayment)
 	partialButton := tg.NewInlineKeyboardButtonData(kbPartialPayment, kbDataPartialPayment)
 	cancelButton := tg.NewInlineKeyboardButtonData(kbCancel, kbDataCancel)
 
-	markups := [][]tg.InlineKeyboardButton{
-		{fullButton},
-		{partialButton},
-		{cancelButton},
+	var markups [][]tg.InlineKeyboardButton
+	if payment.PaymentMethod == types.PaymentMethodAcquiring {
+		markups = [][]tg.InlineKeyboardButton{
+			{fullButton},
+			{cancelButton},
+		}
+	} else {
+		markups = [][]tg.InlineKeyboardButton{
+			{fullButton},
+			{partialButton},
+			{cancelButton},
+		}
 	}
-	return tg.NewInlineKeyboardMarkup(markups...)
+
+	return tg.NewInlineKeyboardMarkup(markups...), nil
 }
 
 func refundAmountInlineKeyboard() tg.InlineKeyboardMarkup {
