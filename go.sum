@@ -7,6 +7,8 @@ github.com/DarthRamone/modulbank-go v0.0.2 h1:pSDblHYv4gK3f35t7SgnNNvXlZHPB6THUE
 github.com/DarthRamone/modulbank-go v0.0.2/go.mod h1:b94Iot+pyYXzms7m0PSHEhXNVhSNA0LGKk8TNV+zRuE=
 github.com/DarthRamone/modulbank-go v0.0.3 h1:rMrjL3jstN5hLrh3iG7Wm3jwhRm2l6eeoM/Sefmfi80=
 github.com/DarthRamone/modulbank-go v0.0.3/go.mod h1:b94Iot+pyYXzms7m0PSHEhXNVhSNA0LGKk8TNV+zRuE=
+github.com/DarthRamone/modulbank-go v0.0.4 h1:xS3o43l/qUiRPpD8waWGd9aOfzmTXpt/HpQOMAT/X/U=
+github.com/DarthRamone/modulbank-go v0.0.4/go.mod h1:2CYtCf9HvIuWNxB03gePte0PuDTuqLW9CmPQb40gXXQ=
 github.com/Djarvur/go-err113 v0.0.0-20200410182137-af658d038157 h1:hY39LwQHh+1kaovmIjOrlqnXNX6tygSRfLkkK33IkZU=
 github.com/Djarvur/go-err113 v0.0.0-20200410182137-af658d038157/go.mod h1:4UJr5HIiMZrwgkSPdsjy2uOQExX/WEILpIrO9UPGuXs=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=

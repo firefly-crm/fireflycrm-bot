@@ -36,7 +36,7 @@ func (b orderBook) GeneratePaymentLink(ctx context.Context, paymentId uint64) er
 		CustomOrderId:  strconv.FormatUint(order.Id, 10),
 		Description:    fmt.Sprintf("Заказ #%d", order.Id),
 		SendLetter:     false,
-		Testing:        true,
+		Testing:        false,
 		ReceiptContact: customer.Email.String,
 		ReceiptItems:   nil,
 		UnixTimestamp:  time.Now().Unix(),

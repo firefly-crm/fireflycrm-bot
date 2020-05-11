@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -225,14 +226,20 @@ func (o Order) getFullMessageString(c *Customer) string {
 		}
 
 		if c.Email.Valid {
-			result += fmt.Sprintf("\n*E-Mail:* %s", c.Email.String)
+			email := strings.Replace(c.Email.String, "_", "\\_", -1)
+			result += fmt.Sprintf("\n*E-Mail:* %s", email)
 		} else {
 			result += fmt.Sprintf("\n*E-Mail:* ‼️ Данные не заполнены")
 		}
 
+		fmt.Printf("PHONE: %s\n", c.Phone)
+
 		if c.Phone.Valid {
+			fmt.Printf("PHONE ADDED\n", c.Instagram)
 			result += fmt.Sprintf("\n*Телефон:* %s", c.Phone.String)
 		}
+
+		fmt.Printf("INSTAGRAM: %v\n", c.Instagram)
 
 		if c.Instagram.Valid {
 			result += fmt.Sprintf("\n*Instagram:* [@%[1]s](https://instagram.com/%[1]s)", c.Instagram.String)

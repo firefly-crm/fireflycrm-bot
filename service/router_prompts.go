@@ -168,6 +168,8 @@ func (s Service) processPrompt(ctx context.Context, bot *tg.BotAPI, update tg.Up
 	case types.EditStateWaitingCustomerInstagram:
 		text = strings.Trim(text, "@")
 
+		fmt.Printf("ACTIVE ORDER: %v\n", activeOrder)
+
 		_, err = s.OrderBook.UpdateCustomerInstagram(ctx, text, activeOrder.Id)
 		if err != nil {
 			return fmt.Errorf("failed to update customer email: %w", err)
