@@ -4,7 +4,7 @@ CREATE TABLE users
 (
     id                  BIGINT      NOT NULL PRIMARY KEY,
     is_merchant         BOOLEAN     NOT NULL DEFAULT FALSE,
-    active_order_msg_id BIGINT REFERENCES order_messages,
+    active_order_msg_id BIGINT      NOT NULL DEFAULT 0,
     merchant_id         TEXT        NOT NULL DEFAULT '',
     secret_key          TEXT        NOT NULL DEFAULT '',
     created_at          TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,

@@ -15,7 +15,7 @@ func (s Service) startListenTGUpdates(ctx context.Context, token string) *tg.Bot
 	log.Printf("authorized on account %s", bot.Self.UserName)
 
 	go func() {
-		//bot.Debug = true
+		bot.Debug = true
 		updateConf := tg.NewUpdate(0)
 		updateConf.Timeout = 60
 
