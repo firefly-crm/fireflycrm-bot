@@ -11,7 +11,9 @@ import (
 	"github.com/DarthRamone/fireflycrm-bot/users"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"golang.org/x/sync/errgroup"
 	"log"
+	"net/http"
 	"os"
 )
 
@@ -54,6 +56,15 @@ func main() {
 		pgPort = envPort
 	}
 
+	log.Printf(`
+TG_TOKEN: %s
+HOST: %s
+USER: %s
+PASSWORD: %s
+DB: %s
+PORT: %s\n
+`, tgToken, pgHost, pgUser, pgPassword, pgDBName, pgPort)
+
 	connString := fmt.Sprintf("user=%s password=%s dbname=%s port=%s host=%s sslmode=disable", pgUser, pgPassword, pgDBName, pgPort, pgHost)
 
 	db, err := sqlx.Connect("postgres", connString)
@@ -65,7 +76,7 @@ func main() {
 	bm := billmaker.NewBillMaker()
 	u := users.NewUsers(stor)
 
-	serv := service.Service{
+	_ = service.Service{
 		OrderBook: ob,
 		BillMaker: bm,
 		Users:     u,
@@ -73,5 +84,23 @@ func main() {
 	}
 
 	ctx := infra.Context()
-	serv.Serve(ctx, service.Options{TelegramToken: *token})
+
+	g, ctx := errgroup.WithContext(ctx)
+	//g.Go(func() error {
+	//	//return serv.Serve(ctx, service.Options{TelegramToken: *token})
+	//})
+	g.Go(func() error {
+		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			_, err := w.Write([]byte("Hello world"))
+			if err != nil {
+				fmt.Printf("handle err: %w", err)
+			}
+		})
+		return http.ListenAndServe(":80", nil)
+	})
+
+	err = g.Wait()
+	if err != nil {
+		panic(err)
+	}
 }

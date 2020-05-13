@@ -8,9 +8,8 @@ WORKDIR ./src/github.com/DarthRamone/fireflycrm-bot
 ADD . .
 RUN go build -o main cmd/app/app.go
 
-
 FROM alpine
 WORKDIR /app
 
 COPY --from=builder /go/src/github.com/DarthRamone/fireflycrm-bot/main .
-CMD ["./main"]
+CMD ["sh", "-c", "./main --token ${TG_TOKEN}"]

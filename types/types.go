@@ -124,12 +124,14 @@ type (
 	}
 
 	User struct {
-		Id                   uint64 `db:"id"`
-		IsMerchant           bool   `db:"is_merchant"`
-		ActiveOrderId        uint64 `db:"active_order_id"`
-		MerchantId           string `db:"merchant_id"`
-		SecretKey            string `db:"secret_key"`
-		ActiveOrderMessageId string `db:"active_order_msg_id"`
+		Id                   uint64    `db:"id"`
+		IsMerchant           bool      `db:"is_merchant"`
+		ActiveOrderId        uint64    `db:"active_order_id"`
+		MerchantId           string    `db:"merchant_id"`
+		SecretKey            string    `db:"secret_key"`
+		ActiveOrderMessageId string    `db:"active_order_msg_id"`
+		CreatedAt            time.Time `db:"created_at"`
+		UpdatedAt            time.Time `db:"updated_at"`
 	}
 )
 

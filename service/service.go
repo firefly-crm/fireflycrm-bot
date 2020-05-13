@@ -21,7 +21,8 @@ type (
 	}
 )
 
-func (s Service) Serve(ctx context.Context, opts Options) {
+func (s Service) Serve(ctx context.Context, opts Options) error {
 	bot := s.startListenTGUpdates(ctx, opts.TelegramToken)
 	s.startPaymentsWatcher(ctx, bot)
+	return nil
 }
