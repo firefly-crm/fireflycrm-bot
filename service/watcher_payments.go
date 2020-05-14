@@ -24,7 +24,7 @@ outsideLoop:
 		case <-ticker.C:
 			err := s.checkPayments(ctx, bot)
 			if err != nil {
-				fmt.Printf("failed to check payments: %v", err.Error())
+				logrus.Errorf("failed to check payments: %v", err.Error())
 			}
 		}
 	}
@@ -54,7 +54,7 @@ func (s Service) checkPayments(ctx context.Context, bot *tg.BotAPI) error {
 			SecretKey: user.SecretKey,
 		}
 
-		fmt.Printf("bank payment id: %s\n", p.BankPaymentId)
+		logrus.Debugf("bank payment id: %s\n", p.BankPaymentId)
 
 		bill, err := mb.GetBill(ctx, p.BankPaymentId, opts, http.DefaultClient)
 		if err != nil {
@@ -85,13 +85,13 @@ func (s Service) checkPayments(ctx context.Context, bot *tg.BotAPI) error {
 			msg.ReplyMarkup = notifyReadInlineKeyboard()
 			_, err = bot.Send(msg)
 			if err != nil {
-				logrus.Errorf("failed to send message to chat: %w", err)
+				logrus.Errorf("failed to send message to chat: %v", err)
 				continue
 			}
 
 			err = s.updateOrderMessage(ctx, bot, messages[0].Id, true)
 			if err != nil {
-				logrus.Errorf("failed to")
+				logrus.Errorf("failed to update order message: %v", err)
 				continue
 			}
 		} else if bill.Expired == 1 {

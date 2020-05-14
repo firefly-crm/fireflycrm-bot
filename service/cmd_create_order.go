@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	tg "github.com/go-telegram-bot-api/telegram-bot-api"
-	"log"
+	"github.com/sirupsen/logrus"
 )
 
 func (s Service) createOrder(ctx context.Context, bot *tg.BotAPI, update tg.Update) error {
@@ -20,7 +20,7 @@ func (s Service) createOrder(ctx context.Context, bot *tg.BotAPI, update tg.Upda
 	deleteMessage := tg.NewDeleteMessage(update.Message.Chat.ID, update.Message.MessageID)
 	_, err = bot.DeleteMessage(deleteMessage)
 	if err != nil {
-		log.Printf("failed to delete command message: %w", err)
+		logrus.Warnf("failed to delete command message: %v", err)
 	}
 
 	msg := tg.NewMessage(update.Message.Chat.ID, messageText)

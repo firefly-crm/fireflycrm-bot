@@ -375,8 +375,6 @@ func (s storage) GetCustomer(ctx context.Context, customerId uint64) (c types.Cu
 		return c, fmt.Errorf("failed to get customer: %w", err)
 	}
 
-	fmt.Printf("CUSTOMER: %v\n", c)
-
 	return c, nil
 }
 
@@ -640,7 +638,6 @@ func (s storage) AddOrderMessage(ctx context.Context, orderId, messageId uint64)
 }
 
 func (s storage) SetActiveOrderMessageForUser(ctx context.Context, userId, messageId uint64) error {
-	log.Printf("seting active order; userId: %d, orderId: %d", userId, messageId)
 	const setActiveOrderQuery = `UPDATE users SET active_order_msg_id=$1 WHERE id=$2`
 	_, err := s.db.Exec(setActiveOrderQuery, messageId, userId)
 	if err != nil {

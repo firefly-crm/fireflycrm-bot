@@ -4,28 +4,27 @@ import (
 	"context"
 	tg "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/sirupsen/logrus"
-	"log"
 )
 
 func (s Service) startListenTGUpdates(ctx context.Context, token string) *tg.BotAPI {
 	bot, err := tg.NewBotAPI(token)
 	if err != nil {
-		log.Fatalf("failed to initialize bot: %v", err)
+		logrus.Errorf("failed to initialize bot: %v", err)
 	}
-	log.Printf("authorized on account %s", bot.Self.UserName)
+	logrus.Infof("authorized on account %s", bot.Self.UserName)
 
 	wc := tg.NewWebhook("https://www.firefly.style/api/bot")
 	_, err = bot.SetWebhook(wc)
 	if err != nil {
-		log.Fatalf("failed to set webhook: %v", err)
+		logrus.Errorf("failed to set webhook: %v", err)
 	}
 
 	info, err := bot.GetWebhookInfo()
 	if err != nil {
-		log.Fatal(err)
+		logrus.Error(err)
 	}
 	if info.LastErrorDate != 0 {
-		log.Printf("Telegram callback failed: %s", info.LastErrorMessage)
+		logrus.Warnf("Telegram callback failed: %s", info.LastErrorMessage)
 	}
 
 	go func() {
@@ -42,14 +41,14 @@ func (s Service) startListenTGUpdates(ctx context.Context, token string) *tg.Bot
 
 			info, err := bot.GetWebhookInfo()
 			if err != nil {
-				log.Fatal(err)
+				logrus.Fatal(err)
 			}
 			if info.LastErrorDate != 0 {
-				log.Printf("Telegram callback failed: %s", info.LastErrorMessage)
+				logrus.Warnf("Telegram callback failed: %s", info.LastErrorMessage)
 			}
 
 			if update.CallbackQuery != nil {
-				log.Println("callback is not null")
+				logrus.Infof("callback is not null")
 				err = s.processCallback(ctx, bot, update)
 			} else {
 				if update.Message == nil {

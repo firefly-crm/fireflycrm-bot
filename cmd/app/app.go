@@ -11,8 +11,8 @@ import (
 	"github.com/DarthRamone/fireflycrm-bot/users"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
-	"log"
 	"net/http"
 	"os"
 )
@@ -56,20 +56,11 @@ func main() {
 		pgPort = envPort
 	}
 
-	log.Printf(`
-TG_TOKEN: %s
-HOST: %s
-USER: %s
-PASSWORD: %s
-DB: %s
-PORT: %s\n
-`, tgToken, pgHost, pgUser, pgPassword, pgDBName, pgPort)
-
 	connString := fmt.Sprintf("user=%s password=%s dbname=%s port=%s host=%s sslmode=disable", pgUser, pgPassword, pgDBName, pgPort, pgHost)
 
 	db, err := sqlx.Connect("postgres", connString)
 	if err != nil {
-		log.Fatalln(err)
+		logrus.Fatalln(err)
 	}
 	stor := storage.NewStorage(db)
 	ob := orderbook.MustNewOrderBook(stor)
