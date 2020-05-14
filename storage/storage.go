@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/DarthRamone/fireflycrm-bot/types"
 	"github.com/jmoiron/sqlx"
-	"log"
 	"time"
 )
 
