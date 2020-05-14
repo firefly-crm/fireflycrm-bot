@@ -14,15 +14,24 @@ func (s Service) startListenTGUpdates(ctx context.Context, token string) *tg.Bot
 	}
 	log.Printf("authorized on account %s", bot.Self.UserName)
 
-	go func() {
-		bot.Debug = true
-		updateConf := tg.NewUpdate(0)
-		updateConf.Timeout = 60
+	wc := tg.NewWebhook("https://www.firefly.style/api/bot")
+	_, err = bot.SetWebhook(wc)
+	if err != nil {
+		log.Fatalf("failed to set webhook: %v", err)
+	}
 
-		updates, err := bot.GetUpdatesChan(updateConf)
-		if err != nil {
-			log.Fatalf("failed to get updates channel: %w", err)
-		}
+	info, err := bot.GetWebhookInfo()
+	if err != nil {
+		log.Fatal(err)
+	}
+	if info.LastErrorDate != 0 {
+		log.Printf("Telegram callback failed: %s", info.LastErrorMessage)
+	}
+
+	go func() {
+		bot.Debug = false
+
+		updates := bot.ListenForWebhook("/api/bot")
 
 		for update := range updates {
 			if ctx.Err() == context.Canceled {
@@ -30,6 +39,14 @@ func (s Service) startListenTGUpdates(ctx context.Context, token string) *tg.Bot
 			}
 
 			var err error
+
+			info, err := bot.GetWebhookInfo()
+			if err != nil {
+				log.Fatal(err)
+			}
+			if info.LastErrorDate != 0 {
+				log.Printf("Telegram callback failed: %s", info.LastErrorMessage)
+			}
 
 			if update.CallbackQuery != nil {
 				log.Println("callback is not null")

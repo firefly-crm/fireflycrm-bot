@@ -76,7 +76,7 @@ PORT: %s\n
 	bm := billmaker.NewBillMaker()
 	u := users.NewUsers(stor)
 
-	_ = service.Service{
+	serv := service.Service{
 		OrderBook: ob,
 		BillMaker: bm,
 		Users:     u,
@@ -86,16 +86,24 @@ PORT: %s\n
 	ctx := infra.Context()
 
 	g, ctx := errgroup.WithContext(ctx)
-	//g.Go(func() error {
-	//	//return serv.Serve(ctx, service.Options{TelegramToken: *token})
-	//})
+
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		_, err := w.Write([]byte("FIREFLY LINGERIE"))
+		if err != nil {
+			fmt.Printf("handle err: %w", err)
+		}
+	})
+	http.HandleFunc("/test/", func(w http.ResponseWriter, r *http.Request) {
+		_, err := w.Write([]byte("Hello world"))
+		if err != nil {
+			fmt.Printf("handle err: %w", err)
+		}
+	})
+
 	g.Go(func() error {
-		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			_, err := w.Write([]byte("Hello world"))
-			if err != nil {
-				fmt.Printf("handle err: %w", err)
-			}
-		})
+		return serv.Serve(ctx, service.Options{TelegramToken: *token})
+	})
+	g.Go(func() error {
 		return http.ListenAndServe(":80", nil)
 	})
 
