@@ -19,8 +19,7 @@ func (s Service) processCallback(ctx context.Context, bot *tg.BotAPI, update tg.
 	callbackData := callbackQuery.Data
 
 	shouldDelete := false
-
-	logrus.Println(callbackData)
+	logrus.Infof("processing callback data: %s", callbackData)
 
 	switch callbackData {
 	case kbDataItems:
@@ -343,6 +342,8 @@ func (s Service) processCallback(ctx context.Context, bot *tg.BotAPI, update tg.
 			}
 		}
 	}
+
+	logrus.Info("switch case ended")
 
 	var msg tg.Chattable
 	if !shouldDelete {
