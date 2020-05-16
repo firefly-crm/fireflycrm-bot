@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/DarthRamone/fireflycrm-bot/types"
-	tg "github.com/go-telegram-bot-api/telegram-bot-api"
+	tg "github.com/DarthRamone/telegram-bot-api"
 	"github.com/sirupsen/logrus"
 	"strconv"
 	"strings"

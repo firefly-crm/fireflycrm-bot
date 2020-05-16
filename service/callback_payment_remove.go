@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
-	tg "github.com/go-telegram-bot-api/telegram-bot-api"
+	tg "github.com/DarthRamone/telegram-bot-api"
 )
 
 func (s Service) processPaymentRemove(ctx context.Context, bot *tg.BotAPI, callbackQuery *tg.CallbackQuery, paymentId uint64) error {

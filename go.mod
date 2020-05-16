@@ -4,9 +4,9 @@ go 1.13
 
 require (
 	github.com/DarthRamone/modulbank-go v0.0.5
+	github.com/DarthRamone/telegram-bot-api v4.6.4+incompatible
 	github.com/badoux/checkmail v0.0.0-20181210160741-9661bd69e9ad
 	github.com/brianvoe/gofakeit v3.18.0+incompatible
-	github.com/go-telegram-bot-api/telegram-bot-api v4.6.4+incompatible
 	github.com/gojuno/goose v1.0.0
 	github.com/gojuno/minimock/v3 v3.0.6
 	github.com/golangci/golangci-lint v1.26.0

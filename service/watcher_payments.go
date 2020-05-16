@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	mb "github.com/DarthRamone/modulbank-go"
-	tg "github.com/go-telegram-bot-api/telegram-bot-api"
+	tg "github.com/DarthRamone/telegram-bot-api"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"time"

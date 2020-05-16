@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/DarthRamone/fireflycrm-bot/types"
-	tg "github.com/go-telegram-bot-api/telegram-bot-api"
+	tg "github.com/DarthRamone/telegram-bot-api"
 )
 
 func (s Service) processCancelCallback(ctx context.Context, bot *tg.BotAPI, callbackQuery *tg.CallbackQuery) error {
