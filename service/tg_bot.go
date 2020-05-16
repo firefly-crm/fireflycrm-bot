@@ -13,33 +13,33 @@ func (s Service) startListenTGUpdates(ctx context.Context, token string) *tg.Bot
 	}
 	logrus.Infof("authorized on account %s", bot.Self.UserName)
 
-	wc := tg.NewWebhook("https://www.firefly.style/api/bot")
-	_, err = bot.SetWebhook(wc)
-	if err != nil {
-		logrus.Errorf("failed to set webhook: %v", err)
-	}
-
-	//_, err = bot.RemoveWebhook()
+	//wc := tg.NewWebhook("https://www.firefly.style/api/bot")
+	//_, err = bot.SetWebhook(wc)
 	//if err != nil {
-	//	logrus.Errorf("failed to remove webhook: %v", err)
+	//	logrus.Errorf("failed to set webhook: %v", err)
 	//}
 
-	info, err := bot.GetWebhookInfo()
+	_, err = bot.RemoveWebhook()
 	if err != nil {
-		logrus.Error(err)
+		logrus.Errorf("failed to remove webhook: %v", err)
 	}
-	if info.LastErrorDate != 0 {
-		logrus.Warnf("Telegram callback failed: %s; date: %", info.LastErrorMessage)
-	}
+
+	//info, err := bot.GetWebhookInfo()
+	//if err != nil {
+	//	logrus.Error(err)
+	//}
+	//if info.LastErrorDate != 0 {
+	//	logrus.Warnf("Telegram callback failed: %s; date: %", info.LastErrorMessage)
+	//}
 
 	go func() {
 		bot.Debug = false
 
-		updates := bot.ListenForWebhook("/api/bot")
+		//updates := bot.ListenForWebhook("/api/bot")
 		u := tg.NewUpdate(0)
 		u.Timeout = 60
 
-		//updates, _ := bot.GetUpdatesChan(u)
+		updates, _ := bot.GetUpdatesChan(u)
 		for update := range updates {
 			if ctx.Err() == context.Canceled {
 				break
