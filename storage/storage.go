@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/DarthRamone/fireflycrm-bot/types"
 	"github.com/jmoiron/sqlx"
+	"github.com/sirupsen/logrus"
 	"time"
 )
 
@@ -381,11 +382,10 @@ func (s storage) UpdateCustomerEmail(ctx context.Context, email string, orderId 
 	const createOrGetCustomerQuery = `
 INSERT INTO customers(email) VALUES($1)
 ON CONFLICT(email) DO UPDATE SET email=$1
-RETURNING id
-`
+RETURNING id`
+
 	const updateCustomerIdQuery = `
-UPDATE orders SET customer_id=$2 WHERE id=$1
-`
+UPDATE orders SET customer_id=$2 WHERE id=$1`
 
 	tx, err := s.db.BeginTxx(ctx, nil)
 	if err != nil {
@@ -403,6 +403,8 @@ UPDATE orders SET customer_id=$2 WHERE id=$1
 	if err != nil {
 		return customerId, fmt.Errorf("failed to update customer email: %w", err)
 	}
+
+	logrus.Infof("customer get: %v", customerId)
 
 	_, err = tx.Exec(updateCustomerIdQuery, orderId, customerId)
 	if err != nil {

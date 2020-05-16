@@ -63,6 +63,8 @@ func (s Service) processPrompt(ctx context.Context, bot *tg.BotAPI, update tg.Up
 
 	text := strings.TrimSpace(update.Message.Text)
 
+	logrus.Info("edit state: %v", activeOrder.EditState)
+
 	switch activeOrder.EditState {
 	case types.EditStateWaitingItemName:
 		if !activeOrder.ActiveItemId.Valid {
@@ -131,11 +133,13 @@ func (s Service) processPrompt(ctx context.Context, bot *tg.BotAPI, update tg.Up
 
 		break
 	case types.EditStateWaitingCustomerEmail:
+		logrus.Info("email state")
 		err = checkmail.ValidateFormat(text)
 		if err != nil {
 			return fmt.Errorf("email validation failed: %w", err)
 		}
 
+		logrus.Info("update email")
 		_, err = s.OrderBook.UpdateCustomerEmail(ctx, text, activeOrder.Id)
 		if err != nil {
 			return fmt.Errorf("failed to update customer email: %w", err)

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -222,24 +223,24 @@ func (o Order) getFullMessageString(c *Customer) string {
 	result += "\n*Клиент*"
 	if c != nil {
 
-		//if c.Name.Valid {
-		//	result += fmt.Sprintf("\n*Имя:* %s", c.Name.String)
-		//}
-		//
-		//if c.Email.Valid {
-		//	email := strings.Replace(c.Email.String, "_", "\\_", -1)
-		//	result += fmt.Sprintf("\n*E-Mail:* %s", email)
-		//} else {
-		//	result += fmt.Sprintf("\n*E-Mail:* ‼️ Данные не заполнены")
-		//}
-		//
-		//if c.Phone.Valid {
-		//	result += fmt.Sprintf("\n*Телефон:* %s", c.Phone.String)
-		//}
-		//
-		//if c.Instagram.Valid {
-		//	result += fmt.Sprintf("\n*Instagram:* [@%[1]s](https://instagram.com/%[1]s)", c.Instagram.String)
-		//}
+		if c.Name.Valid {
+			result += fmt.Sprintf("\n*Имя:* %s", c.Name.String)
+		}
+
+		if c.Email.Valid {
+			email := strings.Replace(c.Email.String, "_", "\\_", -1)
+			result += fmt.Sprintf("\n*E-Mail:* %s", email)
+		} else {
+			result += fmt.Sprintf("\n*E-Mail:* ‼️ Данные не заполнены")
+		}
+
+		if c.Phone.Valid {
+			result += fmt.Sprintf("\n*Телефон:* %s", c.Phone.String)
+		}
+
+		if c.Instagram.Valid {
+			result += fmt.Sprintf("\n*Instagram:* [@%[1]s](https://instagram.com/%[1]s)", c.Instagram.String)
+		}
 
 	} else {
 		result += "\n‼️ Данные не заполнены"

@@ -30,12 +30,14 @@ func (s Service) updateOrderMessage(ctx context.Context, bot *tg.BotAPI, message
 		}
 		customer = &c
 		logrus.Info("update order message; got customer")
+	} else {
+
 	}
 
 	chatId := int64(order.UserId)
 
 	editMessage := tg.NewEditMessageText(chatId, int(messageId), order.MessageString(customer, orderMessage.DisplayMode))
-	//editMessage.ParseMode = "markdown"
+	editMessage.ParseMode = "markdown"
 	editMessage.DisableWebPagePreview = true
 	var markup tg.InlineKeyboardMarkup
 	if flowCompleted {
