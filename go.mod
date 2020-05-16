@@ -2,8 +2,6 @@ module github.com/DarthRamone/fireflycrm-bot
 
 go 1.13
 
-replace github.com/DarthRamone/telegram-bot-api => ../telegram-bot-api
-
 require (
 	github.com/DarthRamone/modulbank-go v0.0.5
 	github.com/DarthRamone/telegram-bot-api v4.6.4+incompatible

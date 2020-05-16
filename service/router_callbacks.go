@@ -19,7 +19,6 @@ func (s Service) processCallback(ctx context.Context, bot *tg.BotAPI, update tg.
 	callbackData := callbackQuery.Data
 
 	shouldDelete := false
-	logrus.Infof("processing callback data: %s", callbackData)
 
 	switch callbackData {
 	case kbDataItems:
