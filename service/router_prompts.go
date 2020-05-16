@@ -47,17 +47,17 @@ func (s Service) processPrompt(ctx context.Context, bot *tg.BotAPI, update tg.Up
 			}
 		}
 
+		logrus.Info("prompts; updating message")
+		err = s.updateOrderMessage(ctx, bot, activeMessageId, flowCompleted)
+		if err != nil {
+			logrus.Errorf("failed to update order message: %v", err)
+		}
+
 		logrus.Info("prompts; deleting message")
 		delMessage := tg.NewDeleteMessage(update.Message.Chat.ID, update.Message.MessageID)
 		_, err := bot.Send(delMessage)
 		if err != nil {
 			logrus.Errorf("failed to delete message: %v", err)
-		}
-
-		logrus.Info("prompts; updating message")
-		err = s.updateOrderMessage(ctx, bot, activeMessageId, flowCompleted)
-		if err != nil {
-			logrus.Errorf("failed to update order message: %v", err)
 		}
 	}()
 
