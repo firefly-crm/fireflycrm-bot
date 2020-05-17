@@ -19,7 +19,7 @@ type (
 		GetOrderByMessageId(ctx context.Context, messageId uint64) (order types.Order, err error)
 		SetActiveOrderMessageForUser(ctx context.Context, userId, messageId uint64) error
 		GetActiveOrderForUser(ctx context.Context, userId uint64) (types.Order, error)
-		UpdateHintMessageForOrder(ctx context.Context, orderId, messageId uint64) error
+		UpdateHintMessageForOrder(ctx context.Context, orderId uint64, messageId sql.NullInt64) error
 		AddOrderMessage(ctx context.Context, orderId, messageId uint64) error
 		UpdateOrderEditState(ctx context.Context, orderId uint64, state types.EditState) error
 		UpdateOrderState(ctx context.Context, orderId uint64, state types.OrderState) error
@@ -617,7 +617,7 @@ WHERE
 	return order, nil
 }
 
-func (s storage) UpdateHintMessageForOrder(ctx context.Context, orderId, messageId uint64) error {
+func (s storage) UpdateHintMessageForOrder(ctx context.Context, orderId uint64, messageId sql.NullInt64) error {
 	const updateQuery = `UPDATE orders SET hint_message_id=$1 WHERE id=$2`
 	_, err := s.db.Exec(updateQuery, messageId, orderId)
 	if err != nil {
