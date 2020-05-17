@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/DarthRamone/fireflycrm-bot/common/logger"
 	"github.com/DarthRamone/fireflycrm-bot/types"
-	tg "github.com/DarthRamone/telegram-bot-api"
+	tg "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
 func (s Service) processAddPaymentCallback(ctx context.Context, cbq *tg.CallbackQuery, method types.PaymentMethod) error {

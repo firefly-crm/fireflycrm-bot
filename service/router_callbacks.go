@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/DarthRamone/fireflycrm-bot/common/logger"
 	"github.com/DarthRamone/fireflycrm-bot/types"
-	tg "github.com/DarthRamone/telegram-bot-api"
+	tg "github.com/go-telegram-bot-api/telegram-bot-api"
 	"strconv"
 	"strings"
 )

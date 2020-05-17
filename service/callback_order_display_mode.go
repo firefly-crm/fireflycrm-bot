@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/DarthRamone/fireflycrm-bot/types"
-	tg "github.com/DarthRamone/telegram-bot-api"
+	tg "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
 func (s Service) processOrderDisplayModeCallback(ctx context.Context, bot *tg.BotAPI, callbackQuery *tg.CallbackQuery, mode types.DisplayMode) error {

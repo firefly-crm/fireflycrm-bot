@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/DarthRamone/fireflycrm-bot/types"
-	tg "github.com/DarthRamone/telegram-bot-api"
+	tg "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
 func (s Service) processCustomerEditInstagram(ctx context.Context, bot *tg.BotAPI, callbackQuery *tg.CallbackQuery) error {

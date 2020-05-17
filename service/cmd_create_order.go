@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/DarthRamone/fireflycrm-bot/common/logger"
-	tg "github.com/DarthRamone/telegram-bot-api"
+	tg "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
 func (s Service) createOrder(ctx context.Context, bot *tg.BotAPI, update tg.Update) error {
