@@ -2,14 +2,9 @@ package service
 
 import (
 	"context"
-	"github.com/DarthRamone/fireflycrm-bot/common/logger"
+	"github.com/firefly-crm/common/logger"
 	tg "github.com/go-telegram-bot-api/telegram-bot-api"
 	"net/http"
-)
-
-const (
-	WEBHOOK_URL  = "https://www.firefly.style/api/bot"
-	WEBHOOK_PATH = "/api/bot"
 )
 
 func (s Service) startListenTGUpdates(ctx context.Context, token string) *tg.BotAPI {
@@ -31,24 +26,16 @@ func (s Service) startListenTGUpdates(ctx context.Context, token string) *tg.Bot
 	}
 	log.Infof("authorized on account %s", bot.Self.UserName)
 
-	wc := tg.NewWebhook(WEBHOOK_URL)
-	_, err = bot.SetWebhook(wc)
+	u := tg.NewUpdate(0)
+	u.Timeout = 60
+	updates, err := bot.GetUpdatesChan(u)
 	if err != nil {
-		log.Errorf("failed to set webhook: %v", err)
-	}
-
-	info, err := bot.GetWebhookInfo()
-	if err != nil {
-		log.Errorf("failed to get webhook info: %v", err)
-	}
-	if info.LastErrorDate != 0 {
-		log.Warnf("telegram webhook last error: %s", info.LastErrorMessage)
+		log.Errorf("failed to get updates chan: %w", err)
+		return nil
 	}
 
 	go func() {
 		bot.Debug = false
-
-		updates := bot.ListenForWebhook(WEBHOOK_PATH)
 
 		for update := range updates {
 			if ctx.Err() == context.Canceled {
@@ -56,17 +43,8 @@ func (s Service) startListenTGUpdates(ctx context.Context, token string) *tg.Bot
 			}
 			log.Infof("update received")
 
-			var err error
-			info, err := bot.GetWebhookInfo()
-			if err != nil {
-				log.Errorf(err)
-			}
-			if info.LastErrorDate != 0 {
-				log.Warnf("telegram webhook last error: %s", info.LastErrorMessage)
-			}
-
 			if update.CallbackQuery != nil {
-				err = s.processCallback(ctx, bot, update)
+				err = s.processCallback(ctx, update)
 			} else {
 				if update.Message == nil {
 					continue

@@ -3,16 +3,13 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/DarthRamone/fireflycrm-bot/billmaker"
-	"github.com/DarthRamone/fireflycrm-bot/common/logger"
-	"github.com/DarthRamone/fireflycrm-bot/infra"
-	"github.com/DarthRamone/fireflycrm-bot/orderbook"
-	"github.com/DarthRamone/fireflycrm-bot/service"
-	"github.com/DarthRamone/fireflycrm-bot/storage"
-	"github.com/DarthRamone/fireflycrm-bot/users"
-	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
+	"github.com/firefly-crm/common/infra"
+	"github.com/firefly-crm/common/logger"
+	"github.com/firefly-crm/common/rabbit"
+	"github.com/firefly-crm/common/rabbit/exchanges"
+	"github.com/firefly-crm/fireflycrm-bot/service"
 	"golang.org/x/sync/errgroup"
+	"log"
 	"net/http"
 	"os"
 )
@@ -36,48 +33,43 @@ func main() {
 		}
 	}
 
-	pgHost := os.Getenv("POSTGRES_HOST")
-	if pgHost == "" {
-		panic("pg host is unset; use POSTGRES_HOST env")
+	rabbitUsername := os.Getenv("RMQ_USERNAME")
+	if rabbitUsername == "" {
+		log.Fatalf("rabbit username is empty")
 	}
 
-	pgUser := os.Getenv("POSTGRES_USER")
-	if pgUser == "" {
-		panic("pg username is unset; use POSTGRES_USER env")
+	rabbitPassword := os.Getenv("RMQ_PASSWORD")
+	if rabbitPassword == "" {
+		log.Fatal("rabbit password is empty")
 	}
 
-	pgPassword := os.Getenv("POSTGRES_PASSWORD")
-	if pgPassword == "" {
-		panic("pg password is unset; use POSTGRES_PASSWORD env")
+	rabbitHost := os.Getenv("RMQ_HOST")
+	if rabbitHost == "" {
+		log.Fatalf("rabbit host is empty")
 	}
 
-	pgDBName := os.Getenv("POSTGRES_DB")
-	if pgDBName == "" {
-		panic("pg db is unset; user POSTGRES_DB env")
+	rabbitPort := os.Getenv("RMQ_PORT")
+	if rabbitPort == "" {
+		log.Fatalf("rabbit port is empty")
 	}
 
-	pgPort := "5432"
-	envPort := os.Getenv("POSTGRES_PORT")
-	if envPort != "" {
-		pgPort = envPort
-	}
+	rabbitConnString := fmt.Sprintf("amqp://%s:%s@%s:%s", rabbitUsername, rabbitPassword, rabbitHost, rabbitPort)
 
-	connString := fmt.Sprintf("user=%s password=%s dbname=%s port=%s host=%s sslmode=disable", pgUser, pgPassword, pgDBName, pgPort, pgHost)
-
-	db, err := sqlx.Connect("postgres", connString)
-	if err != nil {
-		panic(err)
+	rabbitConfig := rabbit.Config{
+		Endpoint: rabbitConnString,
 	}
-	stor := storage.NewStorage(db)
-	ob := orderbook.MustNewOrderBook(stor)
-	bm := billmaker.NewBillMaker()
-	u := users.NewUsers(stor)
+	rabbitPrimary := rabbit.MustNew(rabbitConfig)
+	exchange := exchanges.MustExchangeByID(exchanges.FireflyCRMTelegramUpdates)
+
+	go func() {
+		errPrimary := <-rabbitPrimary.Done()
+		logger.Crashf("primary rabbit client error: %v", errPrimary)
+	}()
+
+	primaryPublisher := rabbitPrimary.MustNewExchange(exchange.Opts)
 
 	serv := service.Service{
-		OrderBook: ob,
-		BillMaker: bm,
-		Users:     u,
-		Storage:   stor,
+		Publisher: primaryPublisher,
 	}
 
 	ctx := infra.Context()
@@ -104,7 +96,7 @@ func main() {
 		return http.ListenAndServe(":80", nil)
 	})
 
-	err = g.Wait()
+	err := g.Wait()
 	if err != nil {
 		panic(err)
 	}
