@@ -24,8 +24,9 @@ CREATE TABLE receipt_items
     created_at   TIMESTAMPTZ           NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at   TIMESTAMPTZ           NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
+ALTER TABLE orders
+    ADD CONSTRAINT receipt_items_fk FOREIGN KEY (active_item_id) REFERENCES receipt_items (id);
 CREATE INDEX ord_idx ON receipt_items (order_id);
-
 
 CREATE OR REPLACE FUNCTION update_order_amount() RETURNS TRIGGER AS
 $update_order_amount$
@@ -59,8 +60,8 @@ EXECUTE PROCEDURE update_order_amount();
 
 -- +goose Down
 -- +goose StatementBegin
-DROP FUNCTION IF EXISTS update_order_amount();
-DROP TRIGGER IF EXISTS update_order_amount ON receipt_items;
 DROP TABLE items;
 DROP TABLE receipt_items;
+DROP FUNCTION IF EXISTS update_order_amount();
+DROP TRIGGER IF EXISTS update_order_amount ON receipt_items;
 -- +goose StatementEnd

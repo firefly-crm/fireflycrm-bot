@@ -3,18 +3,18 @@
 CREATE TABLE payments
 (
     id              BIGSERIAL PRIMARY KEY,
-    order_id        BIGINT REFERENCES orders NOT NULL,
-    amount          INT                      NOT NULL DEFAULT 0,
-    payment_method  SMALLINT                 NOT NULL,
-    payment_link    TEXT                     NOT NULL DEFAULT '',
-    payed           BOOLEAN                  NOT NULL DEFAULT FALSE,
-    refunded        BOOLEAN                  NOT NULL DEFAULT FALSE,
-    refund_amount   INT                      NOT NULL DEFAULT 0,
-    bank_payment_id TEXT                     NOT NULL DEFAULT '',
-    expired         BOOLEAN                  NOT NULL DEFAULT FALSE,
-    created_at      TIMESTAMPTZ              NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    order_id        BIGINT,
+    amount          INT         NOT NULL DEFAULT 0,
+    payment_method  SMALLINT    NOT NULL,
+    payment_link    TEXT        NOT NULL DEFAULT '',
+    payed           BOOLEAN     NOT NULL DEFAULT FALSE,
+    refunded        BOOLEAN     NOT NULL DEFAULT FALSE,
+    refund_amount   INT         NOT NULL DEFAULT 0,
+    bank_payment_id TEXT        NOT NULL DEFAULT '',
+    expired         BOOLEAN     NOT NULL DEFAULT FALSE,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     payed_at        TIMESTAMPTZ,
-    updated_at      TIMESTAMPTZ              NOT NULL DEFAULT CURRENT_TIMESTAMP
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE OR REPLACE FUNCTION update_payed_amount() RETURNS TRIGGER AS
@@ -49,4 +49,6 @@ EXECUTE PROCEDURE update_payed_amount();
 -- +goose Down
 -- +goose StatementBegin
 DROP TABLE payments;
+DROP FUNCTION update_payed_amount();
+DROP TRIGGER update_order_payed_amount ON payments;
 -- +goose StatementEnd
