@@ -3,9 +3,9 @@ package service
 import (
 	"context"
 	"fmt"
+	"github.com/DarthRamone/fireflycrm-bot/common/logger"
 	"github.com/DarthRamone/fireflycrm-bot/types"
 	tg "github.com/DarthRamone/telegram-bot-api"
-	"github.com/sirupsen/logrus"
 )
 
 func (s Service) processAddPaymentCallback(ctx context.Context, cbq *tg.CallbackQuery, method types.PaymentMethod) error {
@@ -53,12 +53,12 @@ func (s Service) processPartialPaymentCallback(ctx context.Context, bot *tg.BotA
 
 //if amount is 0 then full payment
 func (s Service) processPaymentCallback(ctx context.Context, bot *tg.BotAPI, messageId uint64, amount uint32) error {
-	logrus.Infof("processing payment callback; amount: %d", amount)
+	log := logger.FromContext(ctx)
+
 	order, err := s.OrderBook.GetOrderByMessageId(ctx, messageId)
 	if err != nil {
 		return fmt.Errorf("failed to get order: %w", err)
 	}
-	logrus.Info("got order by msg id")
 
 	if !order.ActivePaymentId.Valid {
 		return fmt.Errorf("active bill id is nil")
@@ -68,7 +68,6 @@ func (s Service) processPaymentCallback(ctx context.Context, bot *tg.BotAPI, mes
 	if amount == 0 {
 		amount = order.Amount - order.PayedAmount
 	}
-	logrus.Infof("payment id: %d", paymentId)
 
 	var payment types.Payment
 	for _, p := range order.Payments {
@@ -77,12 +76,10 @@ func (s Service) processPaymentCallback(ctx context.Context, bot *tg.BotAPI, mes
 			break
 		}
 	}
-	logrus.Infof("payment: %v", payment)
 
 	defer func() {
-		logrus.Info("payment cb; delete hint")
 		if err := s.deleteHint(ctx, bot, order); err != nil {
-			logrus.Error("failed to delete hint: %v", err.Error())
+			log.Errorf("failed to delete hint: %v", err.Error())
 		}
 	}()
 
@@ -90,7 +87,6 @@ func (s Service) processPaymentCallback(ctx context.Context, bot *tg.BotAPI, mes
 	if err != nil {
 		return fmt.Errorf("failed to update payment amount: %w", err)
 	}
-	logrus.Info("payment amount updated")
 
 	if payment.PaymentMethod == types.PaymentMethodAcquiring {
 		err := s.OrderBook.GeneratePaymentLink(ctx, paymentId)
@@ -99,7 +95,6 @@ func (s Service) processPaymentCallback(ctx context.Context, bot *tg.BotAPI, mes
 		}
 	}
 
-	logrus.Info("payment; update order message")
 	err = s.updateOrderMessage(ctx, bot, messageId, true)
 	if err != nil {
 		return fmt.Errorf("failed to update order message: %w", err)

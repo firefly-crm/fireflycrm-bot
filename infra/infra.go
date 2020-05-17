@@ -16,7 +16,7 @@ func Context() context.Context {
 
 	go func() {
 		sig := <-sigCh
-		fmt.Printf("%s signal received, cancelling service context", sig.String())
+		fmt.Printf("%s signal received, cancelling service context\n", sig.String())
 		cancelFunc()
 	}()
 

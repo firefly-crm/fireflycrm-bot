@@ -3,9 +3,9 @@ package service
 import (
 	"context"
 	"fmt"
+	"github.com/DarthRamone/fireflycrm-bot/common/logger"
 	"github.com/DarthRamone/fireflycrm-bot/types"
 	tg "github.com/DarthRamone/telegram-bot-api"
-	"github.com/sirupsen/logrus"
 	"strconv"
 	"strings"
 )
@@ -18,7 +18,21 @@ func (s Service) processCallback(ctx context.Context, bot *tg.BotAPI, update tg.
 	var markup tg.InlineKeyboardMarkup
 	callbackData := callbackQuery.Data
 
+	log := logger.FromContext(ctx).
+		WithField("user_id", chatId).
+		WithField("callback", callbackData).
+		WithField("message_id", messageId)
+
+	ctx = logger.ToContext(ctx, log)
+
+	log.Infof("processing callback")
+
 	shouldDelete := false
+
+	err := s.Storage.SetActiveOrderMessageForUser(ctx, uint64(chatId), messageId)
+	if err != nil {
+		return fmt.Errorf("failed to set active order msg id: %w", err)
+	}
 
 	switch callbackData {
 	case kbDataItems:
@@ -342,15 +356,13 @@ func (s Service) processCallback(ctx context.Context, bot *tg.BotAPI, update tg.
 		}
 	}
 
-	logrus.Info("switch case ended")
-
 	var msg tg.Chattable
 	if !shouldDelete {
 		msg = tg.NewEditMessageReplyMarkup(chatId, int(messageId), markup)
 	} else {
 		msg = tg.NewDeleteMessage(chatId, int(messageId))
 	}
-	_, err := bot.Send(msg)
+	_, err = bot.Send(msg)
 	if err != nil {
 		return fmt.Errorf("failed to send message: %w", err)
 	}

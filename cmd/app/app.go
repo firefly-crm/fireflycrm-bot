@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/DarthRamone/fireflycrm-bot/billmaker"
+	"github.com/DarthRamone/fireflycrm-bot/common/logger"
 	"github.com/DarthRamone/fireflycrm-bot/infra"
 	"github.com/DarthRamone/fireflycrm-bot/orderbook"
 	"github.com/DarthRamone/fireflycrm-bot/service"
@@ -11,7 +12,6 @@ import (
 	"github.com/DarthRamone/fireflycrm-bot/users"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
-	"github.com/sirupsen/logrus"
 	"golang.org/x/sync/errgroup"
 	"net/http"
 	"os"
@@ -20,6 +20,12 @@ import (
 var token = flag.String("token", "", "Telegram bot token")
 
 func main() {
+	defer func() {
+		if err := recover(); err != nil {
+			logger.Crashf("service exited with error: %v", err)
+		}
+	}()
+
 	flag.Parse()
 
 	tgToken := *token
@@ -60,7 +66,7 @@ func main() {
 
 	db, err := sqlx.Connect("postgres", connString)
 	if err != nil {
-		logrus.Fatalln(err)
+		panic(err)
 	}
 	stor := storage.NewStorage(db)
 	ob := orderbook.MustNewOrderBook(stor)

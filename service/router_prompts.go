@@ -3,28 +3,28 @@ package service
 import (
 	"context"
 	"fmt"
+	"github.com/DarthRamone/fireflycrm-bot/common/logger"
 	"github.com/DarthRamone/fireflycrm-bot/types"
 	tg "github.com/DarthRamone/telegram-bot-api"
 	"github.com/badoux/checkmail"
-	"github.com/sirupsen/logrus"
 	"regexp"
 	"strconv"
 	"strings"
 )
 
 func (s Service) processPrompt(ctx context.Context, bot *tg.BotAPI, update tg.Update) error {
+	log := logger.FromContext(ctx)
+
 	userId := uint64(update.Message.From.ID)
 	activeMessageId, err := s.OrderBook.GetActiveOrderMessageIdForUser(ctx, userId)
 	if err != nil {
 		return fmt.Errorf("failed to get active message id: %w", err)
 	}
-	logrus.Info("got active message id")
 
 	activeOrder, err := s.OrderBook.GetActiveOrderForUser(ctx, userId)
 	if err != nil {
 		return fmt.Errorf("failed to get active order for user: %w", err)
 	}
-	logrus.Info("got active order")
 
 	deleteHint := true
 	standBy := true
@@ -32,38 +32,34 @@ func (s Service) processPrompt(ctx context.Context, bot *tg.BotAPI, update tg.Up
 
 	defer func() {
 		if deleteHint {
-			logrus.Info("prompts; delete hint")
 			err = s.deleteHint(ctx, bot, activeOrder)
 			if err != nil {
-				logrus.Errorf("failed to remove hint: %v", err)
+				log.Errorf("failed to remove hint: %v", err)
 			}
 		}
 
 		if standBy {
-			logrus.Info("prompts; edit state; stand by")
 			err = s.OrderBook.UpdateOrderEditState(ctx, activeOrder.Id, types.EditStateNone)
 			if err != nil {
-				logrus.Errorf("failed to set standby mode: %w", err)
+				log.Errorf("failed to set standby mode: %w", err)
 			}
 		}
 
-		logrus.Info("prompts; updating message")
 		err = s.updateOrderMessage(ctx, bot, activeMessageId, flowCompleted)
 		if err != nil {
-			logrus.Errorf("failed to update order message: %v", err)
+			log.Errorf("failed to update order message: %v", err)
 		}
 
-		logrus.Info("prompts; deleting message")
 		delMessage := tg.NewDeleteMessage(update.Message.Chat.ID, update.Message.MessageID)
 		_, err := bot.Send(delMessage)
 		if err != nil {
-			logrus.Errorf("failed to delete message: %v", err)
+			log.Errorf("failed to delete message: %v", err)
 		}
 	}()
 
 	text := strings.TrimSpace(update.Message.Text)
 
-	logrus.Info("edit state: %v", activeOrder.EditState)
+	log.Infof("edit state: %v", activeOrder.EditState)
 
 	switch activeOrder.EditState {
 	case types.EditStateWaitingItemName:
@@ -77,13 +73,11 @@ func (s Service) processPrompt(ctx context.Context, bot *tg.BotAPI, update tg.Up
 		if err != nil {
 			return fmt.Errorf("failed to change item name: %w", err)
 		}
-		logrus.Info("updated receipt item name")
 
 		item, err := s.OrderBook.GetReceiptItem(ctx, receiptItemId)
 		if err != nil {
 			return fmt.Errorf("failed to get receipt item: %w", err)
 		}
-		logrus.Info("got receipt item")
 
 		if !item.Initialised {
 			err := s.setWaitingForPrice(ctx, bot, activeOrder)
@@ -133,13 +127,11 @@ func (s Service) processPrompt(ctx context.Context, bot *tg.BotAPI, update tg.Up
 
 		break
 	case types.EditStateWaitingCustomerEmail:
-		logrus.Info("email state")
 		err = checkmail.ValidateFormat(text)
 		if err != nil {
 			return fmt.Errorf("email validation failed: %w", err)
 		}
 
-		logrus.Info("update email")
 		_, err = s.OrderBook.UpdateCustomerEmail(ctx, text, activeOrder.Id)
 		if err != nil {
 			return fmt.Errorf("failed to update customer email: %w", err)

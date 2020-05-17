@@ -3,9 +3,9 @@ package service
 import (
 	"context"
 	"fmt"
+	"github.com/DarthRamone/fireflycrm-bot/common/logger"
 	"github.com/DarthRamone/fireflycrm-bot/types"
 	tg "github.com/DarthRamone/telegram-bot-api"
-	"github.com/sirupsen/logrus"
 )
 
 func (s Service) processPaymentRefund(ctx context.Context, bot *tg.BotAPI, callbackQuery *tg.CallbackQuery, paymentId uint64, amount uint32) error {
@@ -25,6 +25,8 @@ func (s Service) processPaymentRefund(ctx context.Context, bot *tg.BotAPI, callb
 }
 
 func (s Service) processRefundCallback(ctx context.Context, bot *tg.BotAPI, order types.Order, messageId uint64, amount uint32) error {
+	log := logger.FromContext(ctx)
+
 	//TODO: Refund payment at ModulBank
 
 	if !order.ActivePaymentId.Valid {
@@ -42,7 +44,7 @@ func (s Service) processRefundCallback(ctx context.Context, bot *tg.BotAPI, orde
 
 	defer func() {
 		if err := s.deleteHint(ctx, bot, order); err != nil {
-			logrus.Error("failed to delete hint: %v", err.Error())
+			log.Errorf("failed to delete hint: %v", err.Error())
 		}
 	}()
 

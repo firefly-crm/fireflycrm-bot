@@ -22,11 +22,6 @@ func (s Service) processAddKnownItem(ctx context.Context, bot *tg.BotAPI, callba
 		return fmt.Errorf("failed to send message: %w", err)
 	}
 
-	err = s.Users.SetActiveOrderMessageForUser(ctx, order.UserId, messageId)
-	if err != nil {
-		return fmt.Errorf("failed to set active order for user: %w", err)
-	}
-
 	var itemId uint64
 	itemId, err = s.OrderBook.AddItem(ctx, order.Id)
 	if err != nil {
@@ -71,11 +66,6 @@ func (s Service) processAddItemCallack(ctx context.Context, bot *tg.BotAPI, call
 	hint, err := bot.Send(hintMessage)
 	if err != nil {
 		return fmt.Errorf("failed to send message: %w", err)
-	}
-
-	err = s.Users.SetActiveOrderMessageForUser(ctx, order.UserId, messageId)
-	if err != nil {
-		return fmt.Errorf("failed to set active order for user: %w", err)
 	}
 
 	_, err = s.OrderBook.AddItem(ctx, order.Id)

@@ -3,11 +3,13 @@ package service
 import (
 	"context"
 	"fmt"
+	"github.com/DarthRamone/fireflycrm-bot/common/logger"
 	tg "github.com/DarthRamone/telegram-bot-api"
-	"github.com/sirupsen/logrus"
 )
 
 func (s Service) createOrder(ctx context.Context, bot *tg.BotAPI, update tg.Update) error {
+	log := logger.FromContext(ctx)
+
 	userId := uint64(update.Message.From.ID)
 
 	orderId, err := s.OrderBook.CreateOrder(ctx, userId)
@@ -20,7 +22,7 @@ func (s Service) createOrder(ctx context.Context, bot *tg.BotAPI, update tg.Upda
 	deleteMessage := tg.NewDeleteMessage(update.Message.Chat.ID, update.Message.MessageID)
 	_, err = bot.DeleteMessage(deleteMessage)
 	if err != nil {
-		logrus.Warnf("failed to delete command message: %v", err)
+		log.Warnf("failed to delete command message: %v", err)
 	}
 
 	msg := tg.NewMessage(update.Message.Chat.ID, messageText)

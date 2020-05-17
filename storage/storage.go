@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/DarthRamone/fireflycrm-bot/types"
 	"github.com/jmoiron/sqlx"
-	"github.com/sirupsen/logrus"
 	"time"
 )
 
@@ -18,7 +17,7 @@ type (
 		CreateUser(ctx context.Context, userId uint64) error
 		SetMerchantData(ctx context.Context, userId uint64, merchantId, secretKey string) error
 		GetOrderByMessageId(ctx context.Context, messageId uint64) (order types.Order, err error)
-		SetActiveOrderMessageForUser(ctx context.Context, userId, orderId uint64) error
+		SetActiveOrderMessageForUser(ctx context.Context, userId, messageId uint64) error
 		GetActiveOrderForUser(ctx context.Context, userId uint64) (types.Order, error)
 		UpdateHintMessageForOrder(ctx context.Context, orderId, messageId uint64) error
 		AddOrderMessage(ctx context.Context, orderId, messageId uint64) error
@@ -403,8 +402,6 @@ UPDATE orders SET customer_id=$2 WHERE id=$1`
 	if err != nil {
 		return customerId, fmt.Errorf("failed to update customer email: %w", err)
 	}
-
-	logrus.Infof("customer get: %v", customerId)
 
 	_, err = tx.Exec(updateCustomerIdQuery, orderId, customerId)
 	if err != nil {

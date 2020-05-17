@@ -2,12 +2,19 @@ package service
 
 import (
 	"context"
+	"github.com/DarthRamone/fireflycrm-bot/common/logger"
 	tg "github.com/DarthRamone/telegram-bot-api"
-	"github.com/sirupsen/logrus"
 	"net/http"
 )
 
+const (
+	WEBHOOK_URL  = "https://www.firefly.style/api/bot"
+	WEBHOOK_PATH = "/api/bot"
+)
+
 func (s Service) startListenTGUpdates(ctx context.Context, token string) *tg.BotAPI {
+	log := logger.FromContext(ctx)
+
 	var c *http.Client
 	transport, ok := http.DefaultTransport.(*http.Transport)
 	if ok {
@@ -20,43 +27,42 @@ func (s Service) startListenTGUpdates(ctx context.Context, token string) *tg.Bot
 
 	bot, err := tg.NewBotAPIWithClient(token, c)
 	if err != nil {
-		logrus.Errorf("failed to initialize bot: %v", err)
+		log.Errorf("failed to initialize bot: %v", err)
 	}
-	logrus.Infof("authorized on account %s", bot.Self.UserName)
+	log.Infof("authorized on account %s", bot.Self.UserName)
 
-	wc := tg.NewWebhook("https://www.firefly.style/api/bot")
+	wc := tg.NewWebhook(WEBHOOK_URL)
 	_, err = bot.SetWebhook(wc)
 	if err != nil {
-		logrus.Errorf("failed to set webhook: %v", err)
+		log.Errorf("failed to set webhook: %v", err)
 	}
 
 	info, err := bot.GetWebhookInfo()
 	if err != nil {
-		logrus.Error(err)
+		log.Errorf("failed to get webhook info: %v", err)
 	}
 	if info.LastErrorDate != 0 {
-		logrus.Warnf("Telegram callback failed: %s; date: %", info.LastErrorMessage)
+		log.Warnf("telegram webhook last error: %s", info.LastErrorMessage)
 	}
 
 	go func() {
 		bot.Debug = false
 
-		updates := bot.ListenForWebhook("/api/bot")
+		updates := bot.ListenForWebhook(WEBHOOK_PATH)
 
 		for update := range updates {
 			if ctx.Err() == context.Canceled {
 				break
 			}
-
-			logrus.Info("update received")
+			log.Infof("update received")
 
 			var err error
 			info, err := bot.GetWebhookInfo()
 			if err != nil {
-				logrus.Fatal(err)
+				log.Errorf(err)
 			}
 			if info.LastErrorDate != 0 {
-				logrus.Warnf("Telegram callback failed: %s", info.LastErrorMessage)
+				log.Warnf("telegram webhook last error: %s", info.LastErrorMessage)
 			}
 
 			if update.CallbackQuery != nil {
@@ -69,7 +75,7 @@ func (s Service) startListenTGUpdates(ctx context.Context, token string) *tg.Bot
 			}
 
 			if err != nil {
-				logrus.Errorf("failed to process message: %v", err.Error())
+				log.Errorf("failed to process message: %v", err.Error())
 			}
 		}
 	}()
