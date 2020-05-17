@@ -26,8 +26,6 @@ func (s Service) startListenTGUpdates(ctx context.Context, token string) *tg.Bot
 	}
 	log.Infof("authorized on account %s", bot.Self.UserName)
 
-	_, _ = bot.RemoveWebhook()
-
 	u := tg.NewUpdate(0)
 	u.Timeout = 60
 	updates, err := bot.GetUpdatesChan(u)
