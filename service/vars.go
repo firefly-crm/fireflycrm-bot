@@ -1,46 +1,11 @@
 package service
 
-var (
-	kbCreateOrder          = "Создать заказ"
-	kbActiveOrders         = "Активные заказы"
-	kbItems                = "Позиции"
-	kbAddItemPictogram     = "➕"
-	kbRemovePictogram      = "➖"
-	kbRemove               = "Удалить"
-	kbEditItemPictogram    = "📝"
-	kbQty                  = "Кол-во"
-	kbPrice                = "Цена"
-	kbName                 = "Имя"
-	kbCustomer             = "Клиент"
-	kbCustomerEmail        = "Эл. почта"
-	kbCustomerInstagram    = "Instagram"
-	kbCustomerPhone        = "Телефон"
-	kbBack                 = "Назад"
-	kbCancel               = "Отмена"
-	kbPayment              = "Оплата"
-	kbPaymentLink          = "Ссылка"
-	kbPaymentCard          = "Перевод"
-	kbPaymentCash          = "Наличные"
-	kbFullPayment          = "Полная оплата"
-	kbPartialPayment       = "Частичная оплата"
-	kbFullRefund           = "Полный возврат"
-	kbPartialRefund        = "Частичный возврат"
-	kbRefundPayment        = "Возврат"
-	kbOrderActions         = "Действия"
-	kbOrderDone            = "Завершить заказ"
-	kbOrderInProgress      = "В работу"
-	kbOrderRestart         = "Возобновить заказ"
-	kbOrderDelete          = "Удалить заказ"
-	kbOrderRestore         = "Восстановить"
-	kbOrderCollapse        = "Свернуть"
-	kbOrderExpand          = "Развернуть"
-	kbDelivery             = "Доставка"
-	kbOk                   = "OK"
-	kbLingerieSetPictogram = "👙"
-	kbDeliveryPictogram    = "🚚"
+const (
+	kbCreateOrder  = "Создать заказ"
+	kbActiveOrders = "Активные заказы"
 )
 
-var (
+const (
 	kbDataItems           = "items"
 	kbDataCustomer        = "customer"
 	kbDataAddItem         = "order_add_item"
@@ -70,16 +35,4 @@ var (
 	kbDataLingerieSet     = "lingerie"
 	kbDataInstagram       = "instagram"
 	kbDataNotifyRead      = "notify_readed"
-)
-
-var (
-	replyMerchantSuccessfulRegistered = "Регистрация прошла успешно"
-	replyWelcome                      = "Добро пожаловать!"
-	replyEnterItemName                = "Введите наименование"
-	replyEnterItemPrice               = "Введите стоимость"
-	replyEnterItemQty                 = "Введите количество"
-	replyEnterCustomerEmail           = "Введите адрес эл. почты"
-	replyEnterCustomerInstagram       = "Введите имя пользователя"
-	replyEnterCustomerPhone           = "Введите номер телефона"
-	replyEnterAmount                  = "Введите сумму"
 )
