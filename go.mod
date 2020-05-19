@@ -13,6 +13,7 @@ require (
 	github.com/jmoiron/sqlx v1.2.1-0.20190826204134-d7d95172beb5 // indirect
 	github.com/lib/pq v1.2.0 // indirect
 	github.com/sirupsen/logrus v1.6.0
+	github.com/spf13/viper v1.6.1
 	github.com/technoweenie/multipartstreamer v1.0.1 // indirect
 	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 	google.golang.org/appengine v1.5.0 // indirect
