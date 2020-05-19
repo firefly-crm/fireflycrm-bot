@@ -19,6 +19,8 @@ func main() {
 		}
 	}()
 
+	infraCtx := infra.Context()
+
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
 	viper.AddConfigPath(".")
@@ -50,12 +52,10 @@ func main() {
 		Publisher: primaryPublisher,
 	}
 
-	ctx := infra.Context()
-
-	g, ctx := errgroup.WithContext(ctx)
+	g, _ := errgroup.WithContext(infraCtx)
 
 	g.Go(func() error {
-		return serv.Serve(ctx, service.Options{TelegramToken: serviceConfig.TgToken})
+		return serv.StartListenTGUpdates(infraCtx, serviceConfig.TgToken)
 	})
 
 	err = g.Wait()

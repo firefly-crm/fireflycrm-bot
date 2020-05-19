@@ -1,3 +1,4 @@
 /.idea/
 /bin/
 /proto/include/google/protobuf/
+/config.yaml

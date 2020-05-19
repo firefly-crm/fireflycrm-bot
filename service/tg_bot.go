@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-func (s Service) startListenTGUpdates(ctx context.Context, token string) *tg.BotAPI {
+func (s Service) StartListenTGUpdates(ctx context.Context, token string) error {
 	log := logger.FromContext(ctx)
 
 	var c *http.Client
@@ -34,29 +34,29 @@ func (s Service) startListenTGUpdates(ctx context.Context, token string) *tg.Bot
 		return nil
 	}
 
-	go func() {
-		bot.Debug = false
+	bot.Debug = false
 
-		for update := range updates {
-			if ctx.Err() == context.Canceled {
-				break
-			}
-			log.Infof("update received")
-
-			if update.CallbackQuery != nil {
-				err = s.processCallback(ctx, update)
-			} else {
-				if update.Message == nil {
-					continue
-				}
-				err = s.processCommand(ctx, bot, update)
-			}
-
-			if err != nil {
-				log.Errorf("failed to process message: %v", err.Error())
-			}
+	for update := range updates {
+		if ctx.Err() == context.Canceled {
+			log.Infof("context cancelled; stop listen updates")
+			bot.StopReceivingUpdates()
+			break
 		}
-	}()
+		log.Infof("update received")
 
-	return bot
+		if update.CallbackQuery != nil {
+			err = s.processCallback(ctx, update)
+		} else {
+			if update.Message == nil {
+				continue
+			}
+			err = s.processCommand(ctx, bot, update)
+		}
+
+		if err != nil {
+			log.Errorf("failed to process message: %v", err.Error())
+		}
+	}
+
+	return nil
 }
