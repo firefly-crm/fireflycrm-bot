@@ -82,7 +82,7 @@ func (s Service) processCallback(ctx context.Context, update tg.Update) error {
 	case kbDataOrderExpand:
 		callbackType = tp.CallbackType_ORDER_EXPAND
 	case kbDataDelivery:
-		fallthrough
+		callbackType = tp.CallbackType_CUSTOM_ITEM_DELIVERY
 	case kbDataLingerieSet:
 		callbackType = tp.CallbackType_CUSTOM_ITEM_LINGERIE_SET
 	case kbDataNotifyRead:
