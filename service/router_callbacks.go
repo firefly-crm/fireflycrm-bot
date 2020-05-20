@@ -122,6 +122,21 @@ func (s Service) processCallback(ctx context.Context, update tg.Update) error {
 			}
 		}
 
+		if entity == "order" {
+			var err error
+			entityId, err = strconv.ParseUint(args[3], 10, 64)
+			if err != nil {
+				return fmt.Errorf("failed to parse id: %w", err)
+			}
+
+			if action == "edit" {
+				switch args[2] {
+				case "date":
+					callbackType = tp.CallbackType_ORDER_EDIT_DUE_DATE
+				}
+			}
+		}
+
 		if entity == "item" {
 			if argsCount == 3 {
 				var err error
