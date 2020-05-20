@@ -35,4 +35,5 @@ const (
 	kbDataLingerieSet     = "lingerie"
 	kbDataInstagram       = "instagram"
 	kbDataNotifyRead      = "notify_readed"
+	kbDataOrderEdit       = "order_edit"
 )

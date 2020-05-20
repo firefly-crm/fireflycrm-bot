@@ -87,6 +87,8 @@ func (s Service) processCallback(ctx context.Context, update tg.Update) error {
 		callbackType = tp.CallbackType_CUSTOM_ITEM_LINGERIE_SET
 	case kbDataNotifyRead:
 		callbackType = tp.CallbackType_NOTIFY_READ
+	case kbDataOrderEdit:
+		callbackType = tp.CallbackType_ORDER_EDIT
 	default:
 		args := strings.Split(callbackData, "_")
 		entity := args[0]
