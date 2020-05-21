@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	. "github.com/firefly-crm/common/bot"
 	"github.com/firefly-crm/common/logger"
 	tp "github.com/firefly-crm/common/messages/telegram"
 	"github.com/firefly-crm/common/rabbit/routes"
@@ -28,12 +29,12 @@ func (s Service) processCommand(ctx context.Context, bot *tg.BotAPI, update tg.U
 
 	if cmd == "/start" {
 		commandType = tp.CommandType_START
-	} else if cmd == kbCreateOrder {
+	} else if cmd == KbCreateOrder {
 		commandType = tp.CommandType_CREATE_ORDER
 	} else if strings.HasPrefix(cmd, "/registerAsMerchant") {
 		commandType = tp.CommandType_REGISTER_AS_MERCHANT
 		args = strings.Split(cmd, " ")[1:]
-	} else if cmd == kbActiveOrders {
+	} else if cmd == KbActiveOrders {
 	} else {
 		promptEvent := &tp.PromptEvent{
 			UserId:      uint64(update.Message.From.ID),

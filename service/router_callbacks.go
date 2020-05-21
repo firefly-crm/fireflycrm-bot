@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	. "github.com/firefly-crm/common/bot"
 	"github.com/firefly-crm/common/logger"
 	tp "github.com/firefly-crm/common/messages/telegram"
 	"github.com/firefly-crm/common/rabbit/routes"
@@ -31,63 +32,63 @@ func (s Service) processCallback(ctx context.Context, update tg.Update) error {
 	var entityId uint64
 
 	switch callbackData {
-	case kbDataItems:
+	case KbDataItems:
 		callbackType = tp.CallbackType_ITEMS
-	case kbDataBack:
+	case KbDataBack:
 		callbackType = tp.CallbackType_BACK
-	case kbDataCancel:
+	case KbDataCancel:
 		callbackType = tp.CallbackType_CANCEL
-	case kbDataAddItem:
+	case KbDataAddItem:
 		callbackType = tp.CallbackType_RECEIPT_ITEMS_ADD
-	case kbDataRemoveItem:
+	case KbDataRemoveItem:
 		callbackType = tp.CallbackType_RECEIPT_ITEMS_REMOVE
-	case kbDataEditItem:
+	case KbDataEditItem:
 		callbackType = tp.CallbackType_RECEIPT_ITEMS_EDIT
-	case kbDataCustomer:
+	case KbDataCustomer:
 		callbackType = tp.CallbackType_CUSTOMER
-	case kbDataPayment:
+	case KbDataPayment:
 		callbackType = tp.CallbackType_PAYMENTS
-	case kbDataPaymentCard:
+	case KbDataPaymentCard:
 		callbackType = tp.CallbackType_ADD_PAYMENT_TRANSFER
-	case kbDataPaymentCash:
+	case KbDataPaymentCash:
 		callbackType = tp.CallbackType_ADD_PAYMENT_CASH
-	case kbDataPaymentLink:
+	case KbDataPaymentLink:
 		callbackType = tp.CallbackType_ADD_PAYMENT_LINK
-	case kbDataFullPayment:
+	case KbDataFullPayment:
 		callbackType = tp.CallbackType_PAYMENT_AMOUNT_FULL
-	case kbDataPartialPayment:
+	case KbDataPartialPayment:
 		callbackType = tp.CallbackType_PAYMENT_AMOUNT_PARTIAL
-	case kbDataRefundPayment:
+	case KbDataRefundPayment:
 		callbackType = tp.CallbackType_PAYMENTS_REFUND
-	case kbDataPartialRefund:
+	case KbDataPartialRefund:
 		callbackType = tp.CallbackType_PAYMENT_REFUND_PARTIAL
-	case kbDataFullRefund:
+	case KbDataFullRefund:
 		callbackType = tp.CallbackType_PAYMENT_REFUND_FULL
-	case kbDataRemovePayment:
+	case KbDataRemovePayment:
 		callbackType = tp.CallbackType_PAYMENTS_REMOVE
-	case kbDataOrderActions:
+	case KbDataOrderActions:
 		callbackType = tp.CallbackType_ORDER_ACTIONS
-	case kbDataOrderDone:
+	case KbDataOrderDone:
 		callbackType = tp.CallbackType_ORDER_STATE_DONE
-	case kbDataOrderRestart:
+	case KbDataOrderRestart:
 		callbackType = tp.CallbackType_ORDER_RESTART
-	case kbDataOrderDelete:
+	case KbDataOrderDelete:
 		callbackType = tp.CallbackType_ORDER_DELETE
-	case kbDataOrderRestore:
+	case KbDataOrderRestore:
 		callbackType = tp.CallbackType_ORDER_RESTORE
-	case kbDataOrderInProgress:
+	case KbDataOrderInProgress:
 		callbackType = tp.CallbackType_ORDER_STATE_IN_PROGRESS
-	case kbDataOrderCollapse:
+	case KbDataOrderCollapse:
 		callbackType = tp.CallbackType_ORDER_COLLAPSE
-	case kbDataOrderExpand:
+	case KbDataOrderExpand:
 		callbackType = tp.CallbackType_ORDER_EXPAND
-	case kbDataDelivery:
+	case KbDataDelivery:
 		callbackType = tp.CallbackType_CUSTOM_ITEM_DELIVERY
-	case kbDataLingerieSet:
+	case KbDataLingerieSet:
 		callbackType = tp.CallbackType_CUSTOM_ITEM_LINGERIE_SET
-	case kbDataNotifyRead:
+	case KbDataNotifyRead:
 		callbackType = tp.CallbackType_NOTIFY_READ
-	case kbDataOrderEdit:
+	case KbDataOrderEdit:
 		callbackType = tp.CallbackType_ORDER_EDIT
 	default:
 		args := strings.Split(callbackData, "_")
@@ -100,7 +101,7 @@ func (s Service) processCallback(ctx context.Context, update tg.Update) error {
 			switch args[2] {
 			case "email":
 				callbackType = tp.CallbackType_CUSTOMER_EDIT_EMAIL
-			case kbDataInstagram:
+			case "instagram":
 				callbackType = tp.CallbackType_CUSTOMER_EDIT_INSTAGRAM
 			case "phone":
 				callbackType = tp.CallbackType_CUSTOMER_EDIT_PHONE
@@ -135,6 +136,8 @@ func (s Service) processCallback(ctx context.Context, update tg.Update) error {
 				switch args[2] {
 				case "date":
 					callbackType = tp.CallbackType_ORDER_EDIT_DUE_DATE
+				case "description":
+					callbackType = tp.CallbackType_ORDER_EDIT_DESCRIPTION
 				}
 			}
 		}
