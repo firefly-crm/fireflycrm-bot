@@ -105,6 +105,8 @@ func (s Service) processCallback(ctx context.Context, update tg.Update) error {
 				callbackType = tp.CallbackType_CUSTOMER_EDIT_INSTAGRAM
 			case "phone":
 				callbackType = tp.CallbackType_CUSTOMER_EDIT_PHONE
+			case "description":
+				callbackType = tp.CallbackType_ORDER_EDIT_DESCRIPTION
 			}
 		}
 
