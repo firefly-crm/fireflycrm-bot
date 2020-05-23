@@ -3,7 +3,7 @@ module github.com/firefly-crm/fireflycrm-bot
 go 1.13
 
 require (
-	github.com/firefly-crm/common v0.0.8
+	github.com/firefly-crm/common v0.0.11
 	github.com/go-telegram-bot-api/telegram-bot-api v4.6.4+incompatible
 	github.com/gojuno/goose v1.0.0
 	github.com/gojuno/minimock/v3 v3.0.6

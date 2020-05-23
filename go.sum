@@ -49,6 +49,8 @@ github.com/firefly-crm/common v0.0.6 h1:s5liDeOKUAOiVGd/zC5UVl7fIcRaBB4QHKC5ZEWB
 github.com/firefly-crm/common v0.0.6/go.mod h1:dK6+Oy3Y1RMDyplAqEJFs9VGpRegnoOJ7eI/1cHpvBA=
 github.com/firefly-crm/common v0.0.8 h1:YB3Tip9f96UpleqKAxxwXPqYa1/x5XCTsxUPvElQDK8=
 github.com/firefly-crm/common v0.0.8/go.mod h1:dK6+Oy3Y1RMDyplAqEJFs9VGpRegnoOJ7eI/1cHpvBA=
+github.com/firefly-crm/common v0.0.11 h1:L/BNDEmXM6NtxfUyY+NRxVWHngXVdP3zOA4R+uT6cpM=
+github.com/firefly-crm/common v0.0.11/go.mod h1:dK6+Oy3Y1RMDyplAqEJFs9VGpRegnoOJ7eI/1cHpvBA=
 github.com/fsnotify/fsnotify v1.4.7 h1:IXs+QLmnXW2CcXuY+8Mzv/fWEsPGWxqefPtCP5CnV9I=
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
 github.com/ghodss/yaml v1.0.0/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
